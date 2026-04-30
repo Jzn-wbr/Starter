@@ -14,12 +14,13 @@ Supabase is the v1 backend for music storage and alarm configuration. The config
 
 The bracelet is dedicated to the station. The station decides when the alarm starts and when it stops. The PWA is not the alarm authority.
 
-For intersystem contracts, states, communication paths, and failure policy, read `ARCHITECTURE.md`.
+For intersystem contracts, states, communication paths, Supabase schema, ESP-NOW packets, failure policy, and secrets rules, read `ARCHITECTURE.md`.
 
 ## Current Repository Map
 
 - `vision.txt`: early product vision. Useful context, but not always fully up to date.
 - `ARCHITECTURE.md`: canonical contracts between app, station, bracelet, and Supabase.
+- `.gitignore`: root ignore rules for secrets, build artifacts, generated files, and local tool state.
 - `composants.txt`: hardware component list. Treat listed components as fixed unless the user approves a change.
 - `code/app mobile`: future Vue/Vite PWA. Currently the app area.
 - `code/boite hp`: PlatformIO Arduino ESP32 station firmware.
@@ -81,6 +82,7 @@ If touching backend access, storage policies, URLs, secrets, or device identity:
 - State whether the result is prototype-only or production-ready.
 - Do not commit private secrets.
 - Keep example secrets in example files only.
+- Keep `secrets.h`, `.env`, `.env.local`, WiFi credentials, and private Supabase keys out of git.
 - Ask before introducing production auth, multi-user accounts, or device ownership flows.
 
 ## Working Method For Agents
