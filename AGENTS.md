@@ -22,13 +22,14 @@ For intersystem contracts, states, communication paths, Supabase schema, ESP-NOW
 - `ARCHITECTURE.md`: canonical contracts between app, station, bracelet, and Supabase.
 - `.gitignore`: root ignore rules for secrets, build artifacts, generated files, and local tool state.
 - `composants.txt`: hardware component list. Treat listed components as fixed unless the user approves a change.
+- `database/supabase`: concrete Supabase SQL schema for v1 backend tables, storage bucket, and prototype access policies.
 - `code/app mobile`: future Vue/Vite PWA. Currently the app area.
 - `code/app mobile/UML`: PlantUML diagrams for app use cases and user-facing flows.
 - `code/boite hp`: PlatformIO Arduino ESP32 station firmware.
 - `code/boite hp/UML`: PlantUML diagrams for station firmware architecture.
 - `code/bracelet`: PlatformIO Arduino ESP32-C3 bracelet firmware.
 - `code/bracelet/UML`: PlantUML diagrams for bracelet firmware architecture.
-- `schema/bracelet`: KiCad source files for bracelet electronics.
+- `schema/bracelet`: KiCad source files for bracelet electronics. Keep database files out of `schema/`.
 
 Keep the current folder names, including spaces in `app mobile` and `boite hp`, unless the user explicitly asks to rename them.
 

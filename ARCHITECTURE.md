@@ -26,7 +26,9 @@ ESP-NOW is the target station/bracelet link because both devices are ESP32-famil
 
 ## Supabase V1 Schema
 
-Use these exact logical table names for v1 unless this file is updated first. Field names may be implemented as SQL columns or JSON fields, but the app and station must agree on the same wire shape before coding against it.
+Use these exact table names and field names for v1 unless this file is updated first. The concrete Supabase SQL definition is in `database/supabase/v1_schema.sql`. The app and station must code against that SQL schema.
+
+The v1 schema is prototype-only from a security perspective: anon clients may read and write the v1 tables and the public wake-up music bucket. This is acceptable only for the personal no-auth prototype, not for production.
 
 ### `alarm_config`
 
@@ -34,12 +36,14 @@ Single active-row table for the next wake-up only.
 
 - `id`: text, always `main` for v1.
 - `enabled`: boolean.
-- `alarm_date`: ISO date string, local date for the next alarm.
-- `alarm_time`: `HH:MM` 24-hour local time.
+- `alarm_date`: SQL `date`, local date for the next alarm.
+- `alarm_time`: SQL `time without time zone`, `HH:MM` 24-hour local time at the app/station boundary.
 - `timezone`: IANA timezone string, for example `Europe/Zurich`.
-- `selected_track_id`: text or UUID referencing `music_tracks.id`; nullable only if fallback sound is intentionally selected.
+- `volume_percent`: integer `0..100`, playback volume requested for the next alarm.
+- `audio_source`: `track` or `fallback`; `fallback` means the local station fallback sound is intentionally selected.
+- `selected_track_id`: text referencing `music_tracks.id`; nullable only if fallback sound is intentionally selected.
 - `revision`: integer incremented by the app on each saved config.
-- `updated_at`: ISO timestamp.
+- `updated_at`: SQL `timestamptz`, updated automatically by the database on row update.
 
 Station rule: cache the last valid `alarm_config` locally. If Supabase is unreachable later but the cached config is still for the next alarm and the station has valid time, the station may use the cached config.
 
@@ -47,12 +51,14 @@ Station rule: cache the last valid `alarm_config` locally. If Supabase is unreac
 
 Library of uploaded wake-up sounds.
 
-- `id`: text or UUID.
+- `id`: text primary key, generated as a UUID string by default.
 - `title`: display name shown in the app.
 - `storage_path`: Supabase Storage path.
 - `public_url`: playable URL used by the station in the no-auth prototype.
 - `is_available`: boolean.
-- `created_at`: ISO timestamp.
+- `created_at`: SQL `timestamptz`.
+
+Use the Supabase Storage bucket `wake-up-music` for uploaded audio files. V1 allows `audio/mpeg`, `audio/wav`, `audio/ogg`, and `audio/mp4` up to 50 MiB per file.
 
 Avoid storing duration, waveform, tags, statistics, playlist order, or user metadata before v1 needs them.
 
@@ -68,7 +74,7 @@ Single station-published status row read by the app.
 - `active_alarm_revision`: latest `alarm_config.revision` loaded by the station.
 - `bracelet_battery_percent`: integer `0..100`, or `null` if unknown.
 - `bracelet_last_seen_ms`: station uptime timestamp for the last bracelet packet, or `null`.
-- `updated_at`: ISO timestamp.
+- `updated_at`: SQL `timestamptz`, updated automatically by the database on row update.
 
 The app reads this status. The app must not infer alarm authority from it.
 
@@ -290,7 +296,7 @@ The app must keep at least a simple UML use-case diagram. The `.puml` files are 
 Recommended order for agents:
 
 1. Keep this architecture contract current.
-2. Define the concrete Supabase schema from the logical contract.
+2. Apply and validate the concrete Supabase schema in `database/supabase/v1_schema.sql`.
 3. Implement station time sync, alarm state machine, and fallback sound.
 4. Implement app upload, music selection, alarm plan editing, and status display.
 5. Implement bracelet BMI270 activity detection.
