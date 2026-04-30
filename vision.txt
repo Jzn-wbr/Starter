@@ -1,0 +1,103 @@
+Projet : Réveil Ultime avec Bracelet Actif
+
+Description générale :
+Le projet consiste à développer un système de réveil intelligent composé de deux éléments :
+1) Une station fixe (boîte chevet) avec haut-parleur
+2) Un bracelet porté par l’utilisateur
+
+Le système force un réveil effectif en exigeant une activité physique mesurée par le bracelet. Tant que l’utilisateur ne bouge pas suffisamment, le réveil continue de sonner.
+
+Une application mobile de type PWA (Progressive Web App) permet de configurer simplement le réveil pour le lendemain.
+
+---
+
+Fonctionnement :
+
+- L’utilisateur configure son réveil via une application mobile PWA.
+- Les paramètres sont transmis au système.
+- À l’heure définie, la boîte chevet émet un signal sonore.
+- Le bracelet doit être porté par l’utilisateur.
+- Le bracelet mesure le mouvement en continu.
+- Tant qu’un mouvement suffisant n’est pas détecté pendant une durée donnée, le réveil continue.
+- Lorsque l’activité est validée, le réveil s’arrête définitivement.
+- Il n'y a aucun autre moyen de mettre fin à l'alarme
+
+---
+
+Architecture du système :
+
+1) Boîte chevet :
+
+Fonctions :
+- Génération du signal sonore (réveil)
+- Recharge du bracelet via contact
+- Gestion de l’alimentation
+
+Caractéristiques :
+- Boîtier avec chambre acoustique optimisée pour le haut-parleur
+- Structure rigide pour limiter les vibrations
+- Protection contre les courts-circuits sur les contacts de charge
+- Diffusion sonore orientée vers l’utilisateur
+
+---
+
+2) Bracelet :
+
+Fonctions :
+- Détection du mouvement utilisateur
+- Validation du réveil par activité physique
+- Interaction avec la boîte
+
+Caractéristiques :
+- Format compact et confortable à porter
+- Mesure continue du mouvement via capteurs
+- Recharge par contact sur la station
+- Conception robuste pour un usage quotidien
+
+---
+
+3) Application mobile (PWA) :
+
+Fonctions :
+- Configuration du réveil (heure, paramètres)
+- Interface simple et rapide d’utilisation
+- Fonctionne sans installation via navigateur (PWA)
+- Synchronisation avec le système
+
+Caractéristiques :
+- Accessible sur smartphone
+- Interface minimaliste
+- Utilisation quotidienne rapide
+- Évolutive vers des fonctionnalités avancées
+
+---
+
+Contraintes techniques :
+
+- Fiabilité du déclenchement du réveil
+- Détection robuste du mouvement (éviter les contournements)
+- Consommation énergétique maîtrisée
+- Résistance mécanique (bracelet et station)
+- Sécurité électrique (contacts de charge)
+- Empêchement de contourner le réveil
+
+---
+
+Évolutions possibles :
+
+- Analyse des cycles de sommeil
+- Optimisation automatique de l’heure de réveil
+- Amélioration des conditions de réveil
+- Suivi des habitudes de réveil
+- Amélioration de l’ergonomie et du confort
+
+---
+
+Objectif :
+
+Créer un système de réveil impossible à ignorer en combinant :
+- une stimulation sonore efficace
+- une contrainte physique réelle
+- une expérience utilisateur simple via application mobile
+
+Le système vise à garantir un réveil effectif et durable dans la routine quotidienne.

@@ -1,0 +1,32 @@
+Boite chevet:
+
+Boite			(imprimée en 3d)
+Chambre HP		(imprimé en 3d)
+Feutrine
+Grille acoustique
+
+Microcontrôleur		(ESP32-32S 32D)
+Batterie		(LiPo 1S 600mAh)
+Chargeur batterie boite HP 200-300mA 	(IP2312 Type-C LiPo)
+Chargeur batterie montre 200-300mA	(IP2312 Type-C liPo)
+Connecteur usbc		(usbc + -)
+PTC réarmable		(0.5A 30V)
+Pogo pins		(3 pins F)
+Dac i2s			(PCM5102A)
+Ampli audio		(PAM8403)
+LDO 3.3v
+Haut parleur 4ohm
+
+
+
+Bracelet:
+
+Microcontrôleur		(Esp32-C3)
+Batterie		(1S li-po 600 mAh)
+Pogo pins		(3 pins M)
+PTC réarmable		(0.5A 30V)
+Accel-gyro		(BMI270)
+LDO 3.3v
+veroboard
+Boite imprimée en 3d
+Lanière élastique
