@@ -16,6 +16,8 @@ The app is not the alarm authority. It configures the system through Supabase; t
 
 Read `../../ARCHITECTURE.md` before changing Supabase tables/fields, status display, alarm config shape, or intersystem assumptions.
 
+Read and maintain the PlantUML diagrams in `UML/` when changing app use cases or user-facing flows. The app must keep at least a simple UML use-case diagram.
+
 ## Current State
 
 This folder may be empty or early-stage. Inspect it before assuming a framework is already installed.
@@ -65,6 +67,20 @@ For v1, keep scope focused:
 
 Do not add recurring alarms, playlists, sleep-cycle analysis, statistics, account management, or unrelated dashboards before v1 is complete.
 
+## UML Documentation
+
+Keep PlantUML source diagrams in `UML/`.
+
+The app must include a use-case diagram for the v1 user workflow. Update the relevant `.puml` files when changing:
+
+- app use cases;
+- music upload or selection flow;
+- next-alarm configuration flow;
+- station/status problem display;
+- Supabase-backed app behavior.
+
+Do not regenerate diagrams automatically on every dev-server run or build. Maintain the `.puml` source manually alongside meaningful app changes. Generated image exports are optional local artifacts; the `.puml` files are the committed source of truth.
+
 ## Validation
 
 For app code changes, run build and local preview when possible.
@@ -80,6 +96,7 @@ npm run dev
 Before finishing, report:
 
 - Files changed.
+- UML files updated, or why no UML update was needed.
 - Commands run.
 - Local preview URL if started.
 - Any skipped validation and why.

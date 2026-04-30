@@ -8,6 +8,8 @@ The bracelet does not own alarm state. The station decides whether the alarm sto
 
 Read `../../ARCHITECTURE.md` before changing bracelet telemetry, activity validation thresholds, battery readiness, ESP-NOW packet format, or station communication.
 
+Read and maintain the PlantUML diagrams in `UML/` when changing bracelet firmware architecture. These diagrams are for human understanding and must evolve with the code.
+
 ## Current State
 
 This is a PlatformIO Arduino ESP32-C3 project.
@@ -66,6 +68,21 @@ Do not introduce WiFi-heavy bracelet behavior unless explicitly requested; brace
 
 Room-to-room ESP-NOW range is an assumption that must be physically tested. If it is not reliable enough for the target house distance, ask before changing the transport.
 
+## UML Documentation
+
+Keep PlantUML source diagrams in `UML/`.
+
+Update the relevant `.puml` files when changing:
+
+- bracelet class/module boundaries;
+- BMI270 sensor flow;
+- activity scoring and validation flow;
+- ESP-NOW telemetry format or send behavior;
+- battery readiness logic;
+- fault-handling paths.
+
+Do not regenerate diagrams automatically on every PlatformIO run. Maintain the `.puml` source manually alongside meaningful code changes. Generated image exports are optional local artifacts; the `.puml` files are the committed source of truth.
+
 ## Validation
 
 Run a PlatformIO build for large or risky firmware changes. If the change is small and a build is skipped, state why.
@@ -79,6 +96,7 @@ pio run
 Before finishing, report:
 
 - Files changed.
+- UML files updated, or why no UML update was needed.
 - Commands run.
 - Whether firmware was built.
 - Remaining sensor, ESP-NOW, range, or hardware assumptions.

@@ -265,6 +265,26 @@ Forbidden:
 
 The PWA may use Supabase public anon configuration for the no-auth prototype, but agents must label that setup as prototype-only.
 
+## UML Documentation Contract
+
+The app, station, and bracelet projects must keep human-readable PlantUML diagrams:
+
+- `code/app mobile/UML`
+- `code/boite hp/UML`
+- `code/bracelet/UML`
+
+Agents must update the relevant `.puml` files when changing:
+
+- app use cases or user-facing flows;
+- class/module boundaries;
+- state machines;
+- ESP-NOW packet flow;
+- Supabase/config flow in station firmware;
+- activity validation flow in bracelet firmware;
+- fallback or fault-handling architecture.
+
+The app must keep at least a simple UML use-case diagram. The `.puml` files are maintained manually with code changes. They should not be regenerated automatically by PlatformIO builds, app dev servers, or normal agent runs.
+
 ## Implementation Order
 
 Recommended order for agents:

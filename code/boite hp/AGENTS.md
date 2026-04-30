@@ -15,6 +15,8 @@ The PWA is not the alarm authority. The bracelet does not decide final alarm sta
 
 Read `../../ARCHITECTURE.md` before changing station state transitions, Supabase schema usage, fallback behavior, ESP-NOW packets, battery readiness, or station/bracelet communication.
 
+Read and maintain the PlantUML diagrams in `UML/` when changing station firmware architecture. These diagrams are for human understanding and must evolve with the code.
+
 ## Current State
 
 This is a PlatformIO Arduino ESP32 project.
@@ -53,6 +55,21 @@ Target v1 data flow:
 Do not move alarm authority into the PWA or bracelet without explicit approval.
 
 The station should write its latest state and blocking problem state to Supabase when that contract is implemented, so the PWA can show what is wrong.
+
+## UML Documentation
+
+Keep PlantUML source diagrams in `UML/`.
+
+Update the relevant `.puml` files when changing:
+
+- station class/module boundaries;
+- alarm state machine behavior;
+- Supabase config/status flow;
+- ESP-NOW bracelet communication;
+- audio player and fallback sound architecture;
+- fault-handling paths.
+
+Do not regenerate diagrams automatically on every PlatformIO run. Maintain the `.puml` source manually alongside meaningful code changes. Generated image exports are optional local artifacts; the `.puml` files are the committed source of truth.
 
 ## Hardware Assumptions
 
@@ -94,6 +111,7 @@ pio run
 Before finishing, report:
 
 - Files changed.
+- UML files updated, or why no UML update was needed.
 - Commands run.
 - Whether firmware was built.
 - Remaining hardware assumptions or untested behavior.

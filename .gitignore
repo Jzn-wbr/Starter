@@ -51,3 +51,7 @@ pnpm-debug.log*
 **/*.step
 **/*.stp
 
+# Generated UML renders; commit the .puml source files instead
+**/UML/*.png
+**/UML/*.svg
+**/UML/*.pdf

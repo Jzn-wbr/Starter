@@ -23,8 +23,11 @@ For intersystem contracts, states, communication paths, Supabase schema, ESP-NOW
 - `.gitignore`: root ignore rules for secrets, build artifacts, generated files, and local tool state.
 - `composants.txt`: hardware component list. Treat listed components as fixed unless the user approves a change.
 - `code/app mobile`: future Vue/Vite PWA. Currently the app area.
+- `code/app mobile/UML`: PlantUML diagrams for app use cases and user-facing flows.
 - `code/boite hp`: PlatformIO Arduino ESP32 station firmware.
+- `code/boite hp/UML`: PlantUML diagrams for station firmware architecture.
 - `code/bracelet`: PlatformIO Arduino ESP32-C3 bracelet firmware.
+- `code/bracelet/UML`: PlantUML diagrams for bracelet firmware architecture.
 - `schema/bracelet`: KiCad source files for bracelet electronics.
 
 Keep the current folder names, including spaces in `app mobile` and `boite hp`, unless the user explicitly asks to rename them.
@@ -92,6 +95,7 @@ Before coding:
 - Read the relevant local `AGENTS.md`.
 - Inspect the current implementation instead of relying only on old notes.
 - Keep changes scoped to the requested subsystem.
+- Inspect existing `.puml` diagrams before changing app use cases, user-facing flows, station architecture, or bracelet architecture.
 
 During coding:
 
@@ -99,11 +103,14 @@ During coding:
 - Avoid broad refactors unless required.
 - Ask before changing architecture, hardware assumptions, security model, data flow, or folder structure.
 - Ask before changing any contract defined in `ARCHITECTURE.md`.
+- Update relevant PlantUML diagrams when changing app use cases, firmware architecture, class boundaries, state machines, or inter-module communication.
+- Update the relevant `AGENTS.md` when project rules, architecture decisions, commands, or subsystem responsibilities change.
 - Preserve user changes and unrelated files.
 
 Before finishing:
 
 - Report files changed.
+- Report UML files updated, or explain why no diagram update was needed.
 - Report commands run.
 - Report assumptions made.
 - Report remaining risks or skipped validation.
@@ -113,4 +120,14 @@ Before finishing:
 - PWA changes: run build and local preview when possible.
 - Station firmware changes: run PlatformIO build for large or risky changes.
 - Bracelet firmware changes: run PlatformIO build for large or risky changes.
-- Documentation changes: keep all `AGENTS.md` files consistent with this root guide.
+- Documentation changes: keep all `AGENTS.md`, `ARCHITECTURE.md`, and relevant PlantUML files consistent.
+
+## UML Documentation Rule
+
+Project behavior and firmware architecture must remain understandable to a human reader. The app, station, and bracelet projects each keep PlantUML source files in a root-level `UML` folder:
+
+- `code/app mobile/UML`
+- `code/boite hp/UML`
+- `code/bracelet/UML`
+
+The app must keep at least one simple UML use-case diagram. Do not regenerate diagrams automatically on every run or build. Instead, update the `.puml` source files manually as part of each meaningful product, flow, or architecture change. Generated images such as `.png` or `.svg` may be produced locally for review, but the `.puml` files are the source of truth.

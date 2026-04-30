@@ -1,0 +1,48 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "User" as User
+
+rectangle "Wake-up PWA" {
+  usecase "Upload wake-up music" as UploadMusic
+  usecase "Browse music library" as BrowseMusic
+  usecase "Select wake-up track" as SelectTrack
+  usecase "Configure tomorrow alarm" as ConfigureAlarm
+  usecase "View station status" as ViewStationStatus
+  usecase "View bracelet status" as ViewBraceletStatus
+  usecase "View blocking problems" as ViewProblems
+}
+
+rectangle "Supabase" {
+  usecase "Store audio file" as StoreAudio
+  usecase "Store music metadata" as StoreMusicMetadata
+  usecase "Store alarm_config" as StoreAlarmConfig
+  usecase "Expose device_status" as ExposeDeviceStatus
+}
+
+User --> UploadMusic
+User --> BrowseMusic
+User --> SelectTrack
+User --> ConfigureAlarm
+User --> ViewStationStatus
+User --> ViewBraceletStatus
+User --> ViewProblems
+
+UploadMusic --> StoreAudio
+UploadMusic --> StoreMusicMetadata
+BrowseMusic --> StoreMusicMetadata
+SelectTrack --> StoreAlarmConfig
+ConfigureAlarm --> StoreAlarmConfig
+ViewStationStatus --> ExposeDeviceStatus
+ViewBraceletStatus --> ExposeDeviceStatus
+ViewProblems --> ExposeDeviceStatus
+
+note bottom of "Wake-up PWA"
+  The PWA configures the system through Supabase.
+  It does not trigger or stop the alarm directly.
+end note
+
+@enduml
+
