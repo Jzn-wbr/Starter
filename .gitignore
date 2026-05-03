@@ -43,11 +43,16 @@ pnpm-debug.log*
 **/*-backups/
 **/.history/
 **/*.zip
+**/fp-lib-table
+**/sym-lib-table
 
 # Generated hardware outputs
 **/gerbers/
 **/fabrication/
 **/bom/
+**/*.gbr
+**/*.gbrjob
+**/*.drl
 **/*.step
 **/*.stp
 
