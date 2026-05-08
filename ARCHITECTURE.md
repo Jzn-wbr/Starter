@@ -30,22 +30,29 @@ Use these exact table names and field names for v1 unless this file is updated f
 
 The v1 schema is prototype-only from a security perspective: anon clients may read and write the v1 tables and the public wake-up music bucket. This is acceptable only for the personal no-auth prototype, not for production.
 
-### `alarm_config`
+### `alarm_plan`
 
-Single active-row table for the next wake-up only.
+Single active-row table for whether and when the next wake-up should happen.
 
 - `id`: text, always `main` for v1.
 - `enabled`: boolean.
 - `alarm_date`: SQL `date`, local date for the next alarm.
 - `alarm_time`: SQL `time without time zone`, `HH:MM` 24-hour local time at the app/station boundary.
 - `timezone`: IANA timezone string, for example `Europe/Zurich`.
-- `volume_percent`: integer `0..100`, playback volume requested for the next alarm.
-- `audio_source`: `track` or `fallback`; `fallback` means the local station fallback sound is intentionally selected.
-- `selected_track_id`: text referencing `music_tracks.id`; nullable only if fallback sound is intentionally selected.
 - `revision`: integer incremented by the app on each saved config.
 - `updated_at`: SQL `timestamptz`, updated automatically by the database on row update.
 
-Station rule: cache the last valid `alarm_config` locally. If Supabase is unreachable later but the cached config is still for the next alarm and the station has valid time, the station may use the cached config.
+### `alarm_audio_selection`
+
+Single active-row table for what the next wake-up should play.
+
+- `id`: text, always `main` for v1.
+- `audio_source`: `track` or `fallback`; `fallback` means the local station fallback sound is intentionally selected.
+- `selected_track_id`: text referencing `music_tracks.id`; required when `audio_source` is `track`, null when `audio_source` is `fallback`.
+- `volume_percent`: integer `0..100`, playback volume requested for the next alarm.
+- `updated_at`: SQL `timestamptz`, updated automatically by the database on row update.
+
+Station rule: cache the last valid combined alarm configuration from `alarm_plan` and `alarm_audio_selection` locally. If Supabase is unreachable later but the cached config is still for the next alarm and the station has valid time, the station may use the cached config.
 
 ### `music_tracks`
 
@@ -62,21 +69,32 @@ Use the Supabase Storage bucket `wake-up-music` for uploaded audio files. V1 all
 
 Avoid storing duration, waveform, tags, statistics, playlist order, or user metadata before v1 needs them.
 
-### `device_status`
+### `station_status`
 
 Single station-published status row read by the app.
 
 - `id`: text, always `main` for v1.
 - `station_state`: one of the station states below.
+- `problem_code`: one of the problem codes below, or `none`.
+- `problem_message`: short human-readable diagnostic text.
+- `active_alarm_revision`: latest `alarm_plan.revision` loaded by the station.
+- `updated_at`: SQL `timestamptz`, updated automatically by the database on row update.
+
+The app reads this status. The app must not infer alarm authority from it.
+
+### `bracelet_status`
+
+Single station-published row for the latest bracelet state as seen by the station.
+
+- `id`: text, always `main` for v1.
 - `bracelet_state`: latest bracelet state as seen by the station, or `unknown`.
 - `problem_code`: one of the problem codes below, or `none`.
 - `problem_message`: short human-readable diagnostic text.
-- `active_alarm_revision`: latest `alarm_config.revision` loaded by the station.
 - `bracelet_battery_percent`: integer `0..100`, or `null` if unknown.
 - `bracelet_last_seen_ms`: station uptime timestamp for the last bracelet packet, or `null`.
 - `updated_at`: SQL `timestamptz`, updated automatically by the database on row update.
 
-The app reads this status. The app must not infer alarm authority from it.
+The app reads this status. The bracelet does not write to Supabase in v1.
 
 ### Problem Codes
 
@@ -145,7 +163,7 @@ If there is a blocking bug or technical fault that prevents normal operation, th
 
 Blocking faults before alarm start include:
 
-- No valid `alarm_config` can be loaded and no valid cached config exists.
+- No valid combined `alarm_plan` and `alarm_audio_selection` can be loaded and no valid cached config exists.
 - Bracelet is missing or not ready when bracelet validation is required.
 - Bracelet battery is below the required threshold.
 - Bracelet reports `fault`.
@@ -188,7 +206,7 @@ Use compact binary packets. All packets start with:
 - `3`: `pairing_probe`, reserved for future explicit pairing.
 - `4`: `debug_event`, development only.
 
-### `bracelet_status`
+### ESP-NOW `bracelet_status` Packet
 
 Fields:
 
@@ -216,7 +234,7 @@ Station timeout rules:
 Fields:
 
 - `station_state`: enum from System States.
-- `alarm_revision`: current loaded `alarm_config.revision`.
+- `alarm_revision`: current loaded `alarm_plan.revision`.
 - `activity_required`: boolean.
 - `threshold_profile`: `normal` for v1.
 

@@ -5,7 +5,7 @@
 	(uuid "a689e4b4-a3ed-414b-9589-d8b800201032")
 	(paper "A4")
 	(lib_symbols
-		(symbol "Connector:Conn_01x01_Pin"
+		(symbol "Connector:Conn_01x02_Socket"
 			(pin_names
 				(offset 1.016)
 				(hide yes)
@@ -25,8 +25,8 @@
 					)
 				)
 			)
-			(property "Value" "Conn_01x01_Pin"
-				(at 0 -2.54 0)
+			(property "Value" "Conn_01x02_Socket"
+				(at 0 -5.08 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -57,7 +57,7 @@
 					)
 				)
 			)
-			(property "Description" "Generic connector, single row, 01x01, script generated"
+			(property "Description" "Generic connector, single row, 01x02, script generated"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -100,21 +100,10 @@
 					)
 				)
 			)
-			(symbol "Conn_01x01_Pin_1_1"
-				(rectangle
-					(start 0.8636 0.127)
-					(end 0 -0.127)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
+			(symbol "Conn_01x02_Socket_1_1"
 				(polyline
 					(pts
-						(xy 1.27 0) (xy 0.8636 0)
+						(xy -1.27 0) (xy -0.508 0)
 					)
 					(stroke
 						(width 0.1524)
@@ -124,126 +113,9 @@
 						(type none)
 					)
 				)
-				(pin passive line
-					(at 5.08 0 180)
-					(length 3.81)
-					(name "Pin_1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
-		(symbol "Connector:Conn_01x01_Socket"
-			(pin_names
-				(offset 1.016)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "J"
-				(at 0 2.54 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "Conn_01x01_Socket"
-				(at 0 -2.54 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" "Generic connector, single row, 01x01, script generated"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_locked" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "connector"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_fp_filters" "Connector*:*_1x??_*"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "Conn_01x01_Socket_1_1"
 				(polyline
 					(pts
-						(xy -1.27 0) (xy -0.508 0)
+						(xy -1.27 -2.54) (xy -0.508 -2.54)
 					)
 					(stroke
 						(width 0.1524)
@@ -265,6 +137,18 @@
 						(type none)
 					)
 				)
+				(arc
+					(start 0 -3.048)
+					(mid -0.5058 -2.54)
+					(end 0 -2.032)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
 				(pin passive line
 					(at -5.08 0 0)
 					(length 3.81)
@@ -276,6 +160,24 @@
 						)
 					)
 					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 -2.54 0)
+					(length 3.81)
+					(name "Pin_2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2415,118 +2317,6 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "Library_Perso:connector_boxed_2.54mm_1x02"
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "U"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" "Library_Perso:Connector_boxed_2.54_1x02"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "connector_boxed_2.54mm_1x02_0_1"
-				(rectangle
-					(start -1.27 -3.81)
-					(end 1.27 -8.89)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(symbol "connector_boxed_2.54mm_1x02_1_1"
-				(pin free line
-					(at -3.81 -5.08 0)
-					(length 2.54)
-					(name "1"
-						(effects
-							(font
-								(size 1 1)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1 1)
-							)
-						)
-					)
-				)
-				(pin free line
-					(at -3.81 -7.62 0)
-					(length 2.54)
-					(name "2"
-						(effects
-							(font
-								(size 1 1)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1 1)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 		(symbol "Power_Management:AUIPS1051L"
 			(exclude_from_sim no)
 			(in_bom yes)
@@ -3047,6 +2837,16 @@
 	)
 	(wire
 		(pts
+			(xy 160.02 78.74) (xy 189.23 78.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "056d9f4b-82f1-457c-9b8e-b75ccec00d6a")
+	)
+	(wire
+		(pts
 			(xy 76.2 161.29) (xy 76.2 165.1)
 		)
 		(stroke
@@ -3144,6 +2944,16 @@
 			(type default)
 		)
 		(uuid "25f65539-b138-4af9-a99b-ac82533f46f8")
+	)
+	(wire
+		(pts
+			(xy 184.15 85.09) (xy 184.15 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2ad9c6ab-7161-4dbb-beef-7d5cebbbc64a")
 	)
 	(wire
 		(pts
@@ -3267,6 +3077,16 @@
 	)
 	(wire
 		(pts
+			(xy 191.77 82.55) (xy 195.58 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4cb8c509-0160-4b59-aa4d-84b6abb96bd0")
+	)
+	(wire
+		(pts
 			(xy 109.22 96.52) (xy 111.76 96.52)
 		)
 		(stroke
@@ -3297,13 +3117,13 @@
 	)
 	(wire
 		(pts
-			(xy 93.98 43.18) (xy 93.98 66.04)
+			(xy 160.02 81.28) (xy 177.8 81.28)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "6e2acc38-9768-4382-8d9d-a4eb3b35055c")
+		(uuid "66e000b7-b5a2-4bd0-a82b-f3909ae416af")
 	)
 	(wire
 		(pts
@@ -3324,6 +3144,16 @@
 			(type default)
 		)
 		(uuid "726cc291-f18f-4dce-aac7-e59e73494f45")
+	)
+	(wire
+		(pts
+			(xy 189.23 78.74) (xy 189.23 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "745cf471-c0f0-4830-9f90-c9d3bbdf86b4")
 	)
 	(wire
 		(pts
@@ -3447,6 +3277,16 @@
 	)
 	(wire
 		(pts
+			(xy 195.58 82.55) (xy 195.58 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9e177b1d-ba6c-439d-bece-0c7085766fc9")
+	)
+	(wire
+		(pts
 			(xy 48.26 137.16) (xy 59.69 137.16)
 		)
 		(stroke
@@ -3467,6 +3307,16 @@
 	)
 	(wire
 		(pts
+			(xy 180.34 85.09) (xy 184.15 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "acfd58ee-2abf-4b5a-8519-632b32f8d36a")
+	)
+	(wire
+		(pts
 			(xy 86.36 124.46) (xy 86.36 127)
 		)
 		(stroke
@@ -3484,6 +3334,16 @@
 			(type default)
 		)
 		(uuid "b5bf0130-3947-486c-a3a1-e230d1a4d950")
+	)
+	(wire
+		(pts
+			(xy 177.8 81.28) (xy 177.8 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b6d1892f-6616-40c9-81f7-a693a0b0bc85")
 	)
 	(wire
 		(pts
@@ -3514,6 +3374,16 @@
 			(type default)
 		)
 		(uuid "c30579ca-208d-45f1-9c55-762465f8c787")
+	)
+	(wire
+		(pts
+			(xy 93.98 134.62) (xy 86.36 134.62)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c35df40d-05c9-4954-bba6-a59a285bcf71")
 	)
 	(wire
 		(pts
@@ -3594,6 +3464,16 @@
 			(type default)
 		)
 		(uuid "ea88715c-7a2c-4d7a-99db-326608452944")
+	)
+	(wire
+		(pts
+			(xy 93.98 43.18) (xy 93.98 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f4d5ed62-c6b0-4ba7-bb92-cbfd1d75c200")
 	)
 	(wire
 		(pts
@@ -3687,8 +3567,8 @@
 		)
 	)
 	(symbol
-		(lib_id "Library_Perso:connector_boxed_2.54mm_1x02")
-		(at 80.01 160.02 0)
+		(lib_id "Connector:Conn_01x02_Socket")
+		(at 81.28 165.1 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -3696,9 +3576,10 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "05b1cd98-8503-49cd-944b-8924efe098d4")
-		(property "Reference" "U7"
-			(at 82.55 166.3699 0)
+		(fields_autoplaced yes)
+		(uuid "0a27a42a-17ee-4a4d-9197-1a4ba1df4c72")
+		(property "Reference" "J7"
+			(at 82.55 165.0999 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3709,17 +3590,18 @@
 			)
 		)
 		(property "Value" "HP"
-			(at 83.566 168.91 0)
+			(at 82.55 167.6399 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
-		(property "Footprint" "Library_Perso:Connector_boxed_2.54_1x02"
-			(at 80.01 160.02 0)
+		(property "Footprint" "Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical"
+			(at 81.28 165.1 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3730,7 +3612,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 80.01 160.02 0)
+			(at 81.28 165.1 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3740,8 +3622,8 @@
 				)
 			)
 		)
-		(property "Description" ""
-			(at 80.01 160.02 0)
+		(property "Description" "Generic connector, single row, 01x02, script generated"
+			(at 81.28 165.1 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3752,23 +3634,23 @@
 			)
 		)
 		(pin "1"
-			(uuid "039da2e6-a969-4b23-87c2-93e35506d798")
+			(uuid "9b33d165-0e66-43c6-8c74-32e122bd09f0")
 		)
 		(pin "2"
-			(uuid "93b38a6f-abca-44b0-8df2-8918a03c4e44")
+			(uuid "3832a3cc-f300-4ea5-86c1-177d52fbf851")
 		)
 		(instances
 			(project "boite hp"
 				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
-					(reference "U7")
+					(reference "J7")
 					(unit 1)
 				)
 			)
 		)
 	)
 	(symbol
-		(lib_id "power:GND")
-		(at 45.72 43.18 0)
+		(lib_id "Connector:Conn_01x02_Socket")
+		(at 180.34 90.17 270)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -3776,31 +3658,31 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "144e99dd-f086-4895-b513-3c87f7e5a34a")
-		(property "Reference" "#PWR07"
-			(at 45.72 49.53 0)
-			(hide yes)
+		(uuid "0fde6d5f-16fc-4c40-94c2-619283b355c6")
+		(property "Reference" "J4"
+			(at 173.228 88.138 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
-		(property "Value" "GND"
-			(at 45.72 48.26 0)
+		(property "Value" "res1"
+			(at 177.038 91.186 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
-		(property "Footprint" ""
-			(at 45.72 43.18 0)
+		(property "Footprint" "Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical"
+			(at 180.34 90.17 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3811,7 +3693,88 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 45.72 43.18 0)
+			(at 180.34 90.17 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x02, script generated"
+			(at 180.34 90.17 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "1e0a5065-2988-4d4c-bf27-496ec57eaa98")
+		)
+		(pin "1"
+			(uuid "c0fed821-79cb-4808-bdb9-7d01e091f296")
+		)
+		(instances
+			(project "boite hp"
+				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
+					(reference "J4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 48.26 43.18 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "144e99dd-f086-4895-b513-3c87f7e5a34a")
+		(property "Reference" "#PWR07"
+			(at 48.26 49.53 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 48.26 48.26 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 48.26 43.18 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 48.26 43.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3822,7 +3785,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 45.72 43.18 0)
+			(at 48.26 43.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3917,6 +3880,85 @@
 			(project "boite hp"
 				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
 					(reference "#PWR012")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 195.58 87.63 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "1aa503e7-2086-4d9e-b86e-42567f3f805c")
+		(property "Reference" "#PWR023"
+			(at 195.58 93.98 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 198.12 88.8999 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 195.58 87.63 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 195.58 87.63 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 195.58 87.63 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "28c2343c-cc8c-4e56-b1a6-96bc4ffc4c3d")
+		)
+		(instances
+			(project "boite hp"
+				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
+					(reference "#PWR023")
 					(unit 1)
 				)
 			)
@@ -4084,87 +4126,8 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector:Conn_01x01_Pin")
-		(at 50.8 38.1 270)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "290f629d-cb63-43a3-a80b-3fb07d76d514")
-		(property "Reference" "J5"
-			(at 52.07 37.4649 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "Bracelet+"
-			(at 52.07 40.0049 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Connector_Wire:SolderWirePad_1x01_SMD_2x4mm"
-			(at 50.8 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 50.8 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Generic connector, single row, 01x01, script generated"
-			(at 50.8 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "82e2c567-75b3-4f60-be87-70f43c3d89ec")
-		)
-		(instances
-			(project "boite hp"
-				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
-					(reference "J5")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:GND")
-		(at 97.79 43.18 0)
+		(at 91.44 43.18 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -4175,7 +4138,7 @@
 		(fields_autoplaced yes)
 		(uuid "2bed3607-dc98-44e4-a374-a7f48d1937d0")
 		(property "Reference" "#PWR02"
-			(at 97.79 49.53 0)
+			(at 91.44 49.53 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4186,7 +4149,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 97.7899 46.99 90)
+			(at 91.4399 46.99 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -4197,7 +4160,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 97.79 43.18 0)
+			(at 91.44 43.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4208,7 +4171,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 97.79 43.18 0)
+			(at 91.44 43.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4219,7 +4182,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 97.79 43.18 0)
+			(at 91.44 43.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4394,84 +4357,6 @@
 			(project "boite hp"
 				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
 					(reference "C4")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector:Conn_01x01_Socket")
-		(at 93.98 38.1 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "34b88255-e822-4774-9975-63f4f9122236")
-		(property "Reference" "J3"
-			(at 94.234 36.068 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "B+"
-			(at 93.472 39.624 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Connector_Wire:SolderWirePad_1x01_SMD_2x4mm"
-			(at 93.98 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 93.98 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Generic connector, single row, 01x01, script generated"
-			(at 93.98 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "64a74c32-b944-4d44-b2fd-70c3739a8645")
-		)
-		(instances
-			(project "boite hp"
-				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
-					(reference "J3")
 					(unit 1)
 				)
 			)
@@ -5137,7 +5022,7 @@
 	)
 	(symbol
 		(lib_id "power:+3.3V")
-		(at 86.36 134.62 180)
+		(at 93.98 134.62 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -5148,7 +5033,7 @@
 		(fields_autoplaced yes)
 		(uuid "65e684a6-90ba-4356-bfa0-14a22f1f6471")
 		(property "Reference" "#PWR019"
-			(at 86.36 130.81 0)
+			(at 93.98 138.43 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5159,17 +5044,18 @@
 			)
 		)
 		(property "Value" "+3.3V"
-			(at 86.36 139.7 0)
+			(at 96.52 133.3499 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
 		(property "Footprint" ""
-			(at 86.36 134.62 0)
+			(at 93.98 134.62 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5180,7 +5066,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 86.36 134.62 0)
+			(at 93.98 134.62 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5191,7 +5077,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"+3.3V\""
-			(at 86.36 134.62 0)
+			(at 93.98 134.62 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5327,85 +5213,6 @@
 			(project "boite hp"
 				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
 					(reference "U5")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector:Conn_01x01_Socket")
-		(at 80.01 38.1 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "6fede697-54d5-4b90-afea-30d308f773d0")
-		(property "Reference" "J2"
-			(at 81.28 37.4649 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "IN+"
-			(at 81.28 40.0049 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" "Connector_Wire:SolderWirePad_1x01_SMD_2x4mm"
-			(at 80.01 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 80.01 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Generic connector, single row, 01x01, script generated"
-			(at 80.01 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "8afd89a0-4c1b-46e7-a4f6-4338589bacb9")
-		)
-		(instances
-			(project "boite hp"
-				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
-					(reference "J2")
 					(unit 1)
 				)
 			)
@@ -5731,6 +5538,88 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:Conn_01x02_Socket")
+		(at 77.47 38.1 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "8aeae828-c45f-4092-a94e-92d10aaf63af")
+		(property "Reference" "J1"
+			(at 81.28 37.4649 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "IN"
+			(at 81.28 40.0049 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical"
+			(at 77.47 38.1 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 77.47 38.1 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x02, script generated"
+			(at 77.47 38.1 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "5832e8c3-ebe8-4f34-b60c-d1f538641917")
+		)
+		(pin "2"
+			(uuid "0b3bd13c-7b20-4368-be84-9accb2e93620")
+		)
+		(instances
+			(project "boite hp"
+				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
+					(reference "J1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 118.11 73.66 0)
 		(unit 1)
@@ -5803,6 +5692,85 @@
 			(project "boite hp"
 				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
 					(reference "#PWR09")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 184.15 90.17 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "908cf2a6-5c83-4a6d-a680-34937c4599d9")
+		(property "Reference" "#PWR022"
+			(at 184.15 96.52 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 186.69 91.4399 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 184.15 90.17 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 184.15 90.17 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 184.15 90.17 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "0ed3888e-3862-4659-a1b6-78100a6bc86a")
+		)
+		(instances
+			(project "boite hp"
+				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
+					(reference "#PWR022")
 					(unit 1)
 				)
 			)
@@ -5884,6 +5852,88 @@
 			(project "boite hp"
 				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
 					(reference "R4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:Conn_01x02_Socket")
+		(at 91.44 38.1 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "a52be2df-2155-4943-97a7-6f8966daceac")
+		(property "Reference" "J3"
+			(at 95.25 37.4649 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Value" "Battery"
+			(at 95.25 40.0049 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" "Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical"
+			(at 91.44 38.1 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 91.44 38.1 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x02, script generated"
+			(at 91.44 38.1 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "10de71ba-9278-43ec-8e2a-351f40872786")
+		)
+		(pin "2"
+			(uuid "2f10c28a-2aeb-4986-a2ec-8d5bfc9c63b6")
+		)
+		(instances
+			(project "boite hp"
+				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
+					(reference "J3")
 					(unit 1)
 				)
 			)
@@ -6293,7 +6343,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 74.93 43.18 0)
+		(at 77.47 43.18 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -6304,7 +6354,7 @@
 		(fields_autoplaced yes)
 		(uuid "bef7f5ca-4563-4857-8681-c62ca4414030")
 		(property "Reference" "#PWR01"
-			(at 74.93 49.53 0)
+			(at 77.47 49.53 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6315,7 +6365,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 74.93 48.26 0)
+			(at 77.47 48.26 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6325,7 +6375,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 74.93 43.18 0)
+			(at 77.47 43.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6336,7 +6386,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 74.93 43.18 0)
+			(at 77.47 43.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6347,7 +6397,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 74.93 43.18 0)
+			(at 77.47 43.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6364,84 +6414,6 @@
 			(project "boite hp"
 				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
 					(reference "#PWR01")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector:Conn_01x01_Socket")
-		(at 97.79 38.1 90)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "c6287358-874e-4c7e-91a4-e85290835da7")
-		(property "Reference" "J4"
-			(at 99.06 36.322 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "B-"
-			(at 101.346 40.132 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Connector_Wire:SolderWirePad_1x01_SMD_2x4mm"
-			(at 97.79 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 97.79 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Generic connector, single row, 01x01, script generated"
-			(at 97.79 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "58b02404-353c-4933-bc12-cf3c91117bed")
-		)
-		(instances
-			(project "boite hp"
-				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
-					(reference "J4")
 					(unit 1)
 				)
 			)
@@ -6627,84 +6599,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector:Conn_01x01_Pin")
-		(at 45.72 38.1 270)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "cb78dc36-1e62-4f8b-87be-eb14f4f1d90a")
-		(property "Reference" "J6"
-			(at 46.99 37.4649 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "Bracelet-"
-			(at 36.068 39.878 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Connector_Wire:SolderWirePad_1x01_SMD_2x4mm"
-			(at 45.72 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 45.72 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Generic connector, single row, 01x01, script generated"
-			(at 45.72 38.1 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "fdd44146-e817-4c61-8d82-02873d7a1b66")
-		)
-		(instances
-			(project "boite hp"
-				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
-					(reference "J6")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:GND")
 		(at 113.03 55.88 0)
 		(unit 1)
@@ -6783,8 +6677,8 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector:Conn_01x01_Socket")
-		(at 74.93 38.1 90)
+		(lib_id "Connector:Conn_01x02_Socket")
+		(at 48.26 38.1 90)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -6792,9 +6686,10 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "ce37e256-20ee-42da-8b72-610199cc63e5")
-		(property "Reference" "J1"
-			(at 76.2 37.4649 90)
+		(fields_autoplaced yes)
+		(uuid "d0ebcb84-611b-4758-979c-f6c1d8320134")
+		(property "Reference" "J2"
+			(at 52.07 37.4649 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6804,8 +6699,8 @@
 				(justify right)
 			)
 		)
-		(property "Value" "IN-"
-			(at 71.12 40.132 90)
+		(property "Value" "Bracelet"
+			(at 52.07 40.0049 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6815,8 +6710,8 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Connector_Wire:SolderWirePad_1x01_SMD_2x4mm"
-			(at 74.93 38.1 0)
+		(property "Footprint" "Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical"
+			(at 48.26 38.1 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6827,7 +6722,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 74.93 38.1 0)
+			(at 48.26 38.1 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6837,8 +6732,8 @@
 				)
 			)
 		)
-		(property "Description" "Generic connector, single row, 01x01, script generated"
-			(at 74.93 38.1 0)
+		(property "Description" "Generic connector, single row, 01x02, script generated"
+			(at 48.26 38.1 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6847,14 +6742,17 @@
 					(size 1.27 1.27)
 				)
 			)
+		)
+		(pin "2"
+			(uuid "565f3479-517d-4052-94e5-adea2556a870")
 		)
 		(pin "1"
-			(uuid "56155358-8c80-49dd-a934-1a42e503b714")
+			(uuid "0ccd3551-00c8-4e32-8702-b23ff063b967")
 		)
 		(instances
 			(project "boite hp"
 				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
-					(reference "J1")
+					(reference "J2")
 					(unit 1)
 				)
 			)
@@ -7337,6 +7235,87 @@
 			(project "boite hp"
 				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
 					(reference "#PWR014")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:Conn_01x02_Socket")
+		(at 191.77 87.63 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "f4029c37-8072-45ef-8a97-6afd099cdf11")
+		(property "Reference" "J5"
+			(at 185.928 85.852 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "res2"
+			(at 188.468 88.646 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical"
+			(at 191.77 87.63 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 191.77 87.63 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x02, script generated"
+			(at 191.77 87.63 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "770cfc1b-9154-4253-94f5-e1fa29ee7221")
+		)
+		(pin "1"
+			(uuid "a5334518-ee84-4a74-8a90-86365fe2df87")
+		)
+		(instances
+			(project "boite hp"
+				(path "/a689e4b4-a3ed-414b-9589-d8b800201032"
+					(reference "J5")
 					(unit 1)
 				)
 			)
