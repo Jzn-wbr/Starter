@@ -1,0 +1,17 @@
+{
+  "name": "Starter",
+  "short_name": "Starter",
+  "description": "Configuration du réveil actif personnel.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f4ee",
+  "theme_color": "#f7f4ee",
+  "icons": [
+    {
+      "src": "/starter-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

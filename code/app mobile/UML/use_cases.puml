@@ -9,6 +9,7 @@ rectangle "Wake-up PWA" {
   usecase "Upload wake-up music" as UploadMusic
   usecase "Browse music library" as BrowseMusic
   usecase "Select wake-up track" as SelectTrack
+  usecase "Select local fallback sound" as SelectFallback
   usecase "Configure tomorrow alarm" as ConfigureAlarm
   usecase "View station status" as ViewStationStatus
   usecase "View bracelet status" as ViewBraceletStatus
@@ -18,13 +19,16 @@ rectangle "Wake-up PWA" {
 rectangle "Supabase" {
   usecase "Store audio file" as StoreAudio
   usecase "Store music metadata" as StoreMusicMetadata
-  usecase "Store alarm_config" as StoreAlarmConfig
-  usecase "Expose device_status" as ExposeDeviceStatus
+  usecase "Store alarm_plan" as StoreAlarmPlan
+  usecase "Store alarm_audio_selection" as StoreAlarmAudio
+  usecase "Expose station_status" as ExposeStationStatus
+  usecase "Expose bracelet_status" as ExposeBraceletStatus
 }
 
 User --> UploadMusic
 User --> BrowseMusic
 User --> SelectTrack
+User --> SelectFallback
 User --> ConfigureAlarm
 User --> ViewStationStatus
 User --> ViewBraceletStatus
@@ -33,16 +37,19 @@ User --> ViewProblems
 UploadMusic --> StoreAudio
 UploadMusic --> StoreMusicMetadata
 BrowseMusic --> StoreMusicMetadata
-SelectTrack --> StoreAlarmConfig
-ConfigureAlarm --> StoreAlarmConfig
-ViewStationStatus --> ExposeDeviceStatus
-ViewBraceletStatus --> ExposeDeviceStatus
-ViewProblems --> ExposeDeviceStatus
+SelectTrack --> StoreAlarmAudio
+SelectFallback --> StoreAlarmAudio
+ConfigureAlarm --> StoreAlarmPlan
+ConfigureAlarm --> StoreAlarmAudio
+ViewStationStatus --> ExposeStationStatus
+ViewBraceletStatus --> ExposeBraceletStatus
+ViewProblems --> ExposeStationStatus
+ViewProblems --> ExposeBraceletStatus
 
 note bottom of "Wake-up PWA"
   The PWA configures the system through Supabase.
   It does not trigger or stop the alarm directly.
+  The app only proposes alarm slots in the next 20 hours.
 end note
 
 @enduml
-
