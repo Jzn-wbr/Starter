@@ -50,6 +50,7 @@ note bottom of "Wake-up PWA"
   The PWA configures the system through Supabase.
   It does not trigger or stop the alarm directly.
   The app only proposes alarm slots in the next 20 hours.
+  Status polling runs only while the page is visible.
 end note
 
 @enduml

@@ -116,15 +116,42 @@ const problemLabels: Record<ProblemCode, string> = {
 
 onMounted(() => {
   loadInitialData()
-  pollTimer = window.setInterval(loadStatuses, 5_000)
+  startStatusPolling()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
   slotTimer = window.setInterval(refreshSlots, 60_000)
 })
 
 onBeforeUnmount(() => {
-  if (pollTimer) window.clearInterval(pollTimer)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  stopStatusPolling()
   if (slotTimer) window.clearInterval(slotTimer)
   stopPreview()
 })
+
+function isPageVisible() {
+  return document.visibilityState === 'visible'
+}
+
+function startStatusPolling() {
+  if (pollTimer || !isPageVisible()) return
+  pollTimer = window.setInterval(loadStatuses, 5_000)
+}
+
+function stopStatusPolling() {
+  if (!pollTimer) return
+  window.clearInterval(pollTimer)
+  pollTimer = undefined
+}
+
+function handleVisibilityChange() {
+  if (!isPageVisible()) {
+    stopStatusPolling()
+    return
+  }
+
+  loadStatuses()
+  startStatusPolling()
+}
 
 async function loadInitialData() {
   loading.value = true
@@ -168,7 +195,7 @@ async function loadMusicTracks() {
 }
 
 async function loadStatuses() {
-  if (!SUPABASE_CONFIGURED) return
+  if (!SUPABASE_CONFIGURED || !isPageVisible()) return
   refreshing.value = true
   try {
     const client = requireSupabase()
