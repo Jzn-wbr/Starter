@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   Activity,
   AlertTriangle,
@@ -65,6 +65,8 @@ let slotTimer: ReturnType<typeof window.setInterval> | undefined
 let realtimeChannel: RealtimeChannel | undefined
 
 const selectedSlot = computed(() => slots.value[selectedSlotIndex.value] ?? slots.value[0])
+const alarmEnabled = ref(false)
+const alarmTimeDraft = ref('07:00')
 const selectedTrack = computed(() => {
   const selectedId = audioSelection.value?.selected_track_id
   return musicTracks.value.find((track) => track.id === selectedId) ?? null
@@ -79,6 +81,17 @@ const hasProblem = computed(() => {
 const stationStale = computed(() => isStale(stationStatus.value?.updated_at))
 const braceletStale = computed(() => isStale(braceletStatus.value?.updated_at))
 const canUseSupabase = computed(() => SUPABASE_CONFIGURED)
+
+const alarmStatusLabel = computed(() => (alarmEnabled.value ? 'Active' : 'Désactivée'))
+const alarmDateLabel = computed(() => {
+  if (!selectedSlot.value) return 'Aucun créneau'
+  return `${selectedSlot.value.isoDate} à ${selectedSlot.value.shortLabel}`
+})
+const quickPickSlots = computed(() => {
+  const points = [4, 12, 24, 36, 48, 64]
+  return points.map((idx) => slots.value[Math.min(idx, slots.value.length - 1)]).filter(Boolean)
+})
+
 
 const stationStateLabels: Record<string, string> = {
   idle: 'Au repos',
@@ -212,6 +225,7 @@ async function loadAlarmConfig() {
   alarmPlan.value = planResult.data as AlarmPlan | null
   audioSelection.value = audioResult.data as AlarmAudioSelection | null
   draftVolume.value = audioSelection.value?.volume_percent ?? 70
+  alarmEnabled.value = alarmPlan.value?.enabled ?? false
   selectedSlotIndex.value = pickInitialSlot(slots.value, alarmPlan.value?.alarm_date ?? null, alarmPlan.value?.alarm_time ?? null)
 }
 
@@ -263,7 +277,7 @@ async function saveAlarm() {
       .from('alarm_plan')
       .upsert({
         id: 'main',
-        enabled: true,
+        enabled: alarmEnabled.value,
         alarm_date: selectedSlot.value.isoDate,
         alarm_time: selectedSlot.value.sqlTime,
         timezone: 'Europe/Zurich',
@@ -439,6 +453,22 @@ function refreshSlots() {
   selectedSlotIndex.value = newIndex >= 0 ? newIndex : 0
 }
 
+function applyQuickSlot(slotIndex: number) {
+  selectedSlotIndex.value = slotIndex
+}
+
+function applyTimeDraft() {
+  const [h, m] = alarmTimeDraft.value.split(':').map(Number)
+  if (Number.isNaN(h) || Number.isNaN(m)) return
+  const idx = slots.value.findIndex((slot) => slot.sqlTime.startsWith(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`))
+  if (idx >= 0) selectedSlotIndex.value = idx
+}
+
+watch(selectedSlot, (slot) => {
+  if (!slot) return
+  alarmTimeDraft.value = slot.sqlTime.slice(0, 5)
+}, { immediate: true })
+
 function selectOffset(offset: number) {
   const next = selectedSlotIndex.value + offset
   if (next >= 0 && next < slots.value.length) {
@@ -501,11 +531,41 @@ function showError(error: unknown) {
           <div class="section-title">
             <div>
               <p class="eyebrow">Prochaine alarme</p>
-              <h2>{{ selectedSlot?.label }}</h2>
+              <h2>{{ alarmDateLabel }}</h2>
             </div>
-            <span class="soft-pill">{{ selectedSlot ? formatRelativeHours(selectedSlot.hoursFromNow) : 'Aucun créneau' }}</span>
+            <span class="soft-pill" :class="{ inactive: !alarmEnabled }">{{ alarmStatusLabel }}</span>
           </div>
 
+
+
+          <div class="alarm-summary">
+            <div>
+              <span>Heure réglée</span>
+              <strong>{{ selectedSlot?.shortLabel }}</strong>
+              <small>{{ selectedSlot ? formatRelativeHours(selectedSlot.hoursFromNow) : 'Aucun créneau' }}</small>
+            </div>
+            <label class="toggle-row">
+              <input v-model="alarmEnabled" type="checkbox" />
+              <span>{{ alarmEnabled ? 'Alarme active' : 'Alarme inactive' }}</span>
+            </label>
+          </div>
+
+          <div class="time-input-row">
+            <label for="alarm-time">Heure précise</label>
+            <input id="alarm-time" v-model="alarmTimeDraft" type="time" step="900" @change="applyTimeDraft" />
+          </div>
+
+          <div class="quick-picks">
+            <button
+              v-for="slot in quickPickSlots"
+              :key="`${slot.isoDate}-${slot.sqlTime}`"
+              type="button"
+              :class="{ active: selectedSlot?.isoDate === slot.isoDate && selectedSlot?.sqlTime === slot.sqlTime }"
+              @click="applyQuickSlot(slots.findIndex((s) => s.isoDate === slot.isoDate && s.sqlTime === slot.sqlTime))"
+            >
+              {{ slot.shortLabel }}
+            </button>
+          </div>
           <div class="time-wheel" aria-label="Roue horaire des 20 prochaines heures">
             <button class="wheel-step" type="button" :disabled="selectedSlotIndex === 0" @click="selectOffset(-1)">
               −15 min
@@ -578,7 +638,7 @@ function showError(error: unknown) {
             <button class="status-card" type="button" @click="detailsOpen = !detailsOpen">
               <BatteryCharging v-if="braceletStatus?.bracelet_state === 'charging'" :size="22" />
               <Battery v-else :size="22" />
-              <span>Batterie</span>
+              <span>Bracelet batterie</span>
               <strong>
                 {{
                   braceletStatus?.bracelet_battery_percent === null || braceletStatus?.bracelet_battery_percent === undefined

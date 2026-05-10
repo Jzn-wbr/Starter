@@ -552,3 +552,41 @@ h2 {
     height: 34px;
   }
 }
+
+.soft-pill.inactive {
+  color: #9f1239;
+  background: #ffe4e6;
+}
+
+.alarm-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #f4f2ec;
+  margin-bottom: 12px;
+}
+
+.alarm-summary span { color:#66756f; font-size:.8rem; font-weight:800; }
+.alarm-summary strong { display:block; font-size:1.25rem; }
+.alarm-summary small { color:#66756f; font-weight:700; }
+
+.toggle-row { display:flex; align-items:center; gap:8px; font-weight:800; }
+.toggle-row input { width:44px; height:22px; accent-color:#0f766e; }
+
+.time-input-row {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background:#ffffff;
+}
+
+.time-input-row input { border:1px solid rgba(23,33,31,.15); border-radius:10px; padding:6px 8px; }
+
+.quick-picks { display:grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:12px; }
+.quick-picks button { border:0; border-radius:12px; background:#e6f3ef; color:#0f766e; font-weight:800; padding:8px 6px; }
+.quick-picks button.active { background:#0f766e; color:#fff; }
