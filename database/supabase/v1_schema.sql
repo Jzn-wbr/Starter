@@ -283,3 +283,70 @@ on storage.objects
 for delete
 to anon
 using (bucket_id = 'wake-up-music');
+
+-- Prototype realtime feed for the PWA. Supabase projects normally provide the
+-- supabase_realtime publication; this block is safe to re-run.
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    if not exists (
+      select 1
+      from pg_publication_rel pr
+      join pg_class c on c.oid = pr.prrelid
+      join pg_namespace n on n.oid = c.relnamespace
+      where pr.prpubid = (select oid from pg_publication where pubname = 'supabase_realtime')
+        and n.nspname = 'public'
+        and c.relname = 'alarm_plan'
+    ) then
+      alter publication supabase_realtime add table alarm_plan;
+    end if;
+
+    if not exists (
+      select 1
+      from pg_publication_rel pr
+      join pg_class c on c.oid = pr.prrelid
+      join pg_namespace n on n.oid = c.relnamespace
+      where pr.prpubid = (select oid from pg_publication where pubname = 'supabase_realtime')
+        and n.nspname = 'public'
+        and c.relname = 'alarm_audio_selection'
+    ) then
+      alter publication supabase_realtime add table alarm_audio_selection;
+    end if;
+
+    if not exists (
+      select 1
+      from pg_publication_rel pr
+      join pg_class c on c.oid = pr.prrelid
+      join pg_namespace n on n.oid = c.relnamespace
+      where pr.prpubid = (select oid from pg_publication where pubname = 'supabase_realtime')
+        and n.nspname = 'public'
+        and c.relname = 'music_tracks'
+    ) then
+      alter publication supabase_realtime add table music_tracks;
+    end if;
+
+    if not exists (
+      select 1
+      from pg_publication_rel pr
+      join pg_class c on c.oid = pr.prrelid
+      join pg_namespace n on n.oid = c.relnamespace
+      where pr.prpubid = (select oid from pg_publication where pubname = 'supabase_realtime')
+        and n.nspname = 'public'
+        and c.relname = 'station_status'
+    ) then
+      alter publication supabase_realtime add table station_status;
+    end if;
+
+    if not exists (
+      select 1
+      from pg_publication_rel pr
+      join pg_class c on c.oid = pr.prrelid
+      join pg_namespace n on n.oid = c.relnamespace
+      where pr.prpubid = (select oid from pg_publication where pubname = 'supabase_realtime')
+        and n.nspname = 'public'
+        and c.relname = 'bracelet_status'
+    ) then
+      alter publication supabase_realtime add table bracelet_status;
+    end if;
+  end if;
+end $$;

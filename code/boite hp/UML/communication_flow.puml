@@ -1,0 +1,44 @@
+@startuml
+title Bedside station v1 communication flow
+
+participant "Station firmware" as Station
+database "Supabase REST" as Supabase
+participant "NTP" as Ntp
+participant "ESP-NOW bracelet" as Bracelet
+participant "Audio output\nPCM5102A/PAM8403" as Audio
+
+Station -> Ntp : synchronize local time
+Station -> Supabase : GET alarm_plan main
+Station -> Supabase : GET alarm_audio_selection main
+alt selected track
+  Station -> Supabase : GET music_tracks selected_track_id\npublic_url from stored track row
+end
+Station -> Station : cache valid combined config
+Station -> Supabase : publish station_status
+note right
+  active_alarm_revision is null until a valid
+  alarm_plan revision has been loaded.
+end note
+
+loop while armed/ringing
+  Bracelet -> Station : bracelet_status packet
+  Station -> Supabase : publish bracelet_status
+  Station -> Bracelet : station_control packet
+end
+
+loop every 10 seconds while connected
+  Station -> Supabase : refresh alarm_plan and alarm_audio_selection
+  Station -> Supabase : publish current station_status
+end
+
+alt alarm time and stored track playable
+  Station -> Audio : play selected music_tracks public_url
+else track unavailable or fallback selected
+  Station -> Audio : generated local fallback tone
+end
+
+Bracelet -> Station : validated=true
+Station -> Audio : stop alarm
+Station -> Supabase : station_state=stopped
+
+@enduml

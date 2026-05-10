@@ -246,10 +246,10 @@ The station remains authoritative. Bracelet validation is input to the station, 
 
 Use these v1 defaults unless physical testing proves they are wrong:
 
-- Validation requires `60s` of sustained activity.
+- Validation requires `15min` of sustained activity.
 - Evaluate activity in a rolling window.
 - Isolated shake spikes must not validate alone.
-- Short pauses under `3s` are tolerated.
+- Short pauses under `5s` are tolerated.
 - Activity score should represent recent movement intensity on a `0..100` scale.
 
 The bracelet computes activity and sends `validated=true` only after the sustained requirement is met. The station still decides whether this stops the current alarm.

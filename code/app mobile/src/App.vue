@@ -18,13 +18,13 @@ import {
   Play,
   Plus,
   Radio,
-  RefreshCw,
   ShieldAlert,
   Smartphone,
   Trash2,
   Volume2,
   Watch,
 } from 'lucide-vue-next'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 import {
   type AlarmAudioSelection,
   type AlarmPlan,
@@ -62,6 +62,7 @@ const draftVolume = ref(70)
 
 let pollTimer: ReturnType<typeof window.setInterval> | undefined
 let slotTimer: ReturnType<typeof window.setInterval> | undefined
+let realtimeChannel: RealtimeChannel | undefined
 
 const selectedSlot = computed(() => slots.value[selectedSlotIndex.value] ?? slots.value[0])
 const selectedTrack = computed(() => {
@@ -117,6 +118,7 @@ const problemLabels: Record<ProblemCode, string> = {
 onMounted(() => {
   loadInitialData()
   startStatusPolling()
+  startRealtimeUpdates()
   document.addEventListener('visibilitychange', handleVisibilityChange)
   slotTimer = window.setInterval(refreshSlots, 60_000)
 })
@@ -124,6 +126,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange)
   stopStatusPolling()
+  stopRealtimeUpdates()
   if (slotTimer) window.clearInterval(slotTimer)
   stopPreview()
 })
@@ -149,8 +152,39 @@ function handleVisibilityChange() {
     return
   }
 
-  loadStatuses()
+  loadInitialData()
   startStatusPolling()
+}
+
+function startRealtimeUpdates() {
+  if (!SUPABASE_CONFIGURED || realtimeChannel) return
+
+  const client = requireSupabase()
+  realtimeChannel = client
+    .channel('starter-pwa-main')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'alarm_plan', filter: 'id=eq.main' }, () => {
+      void loadAlarmConfig()
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'alarm_audio_selection', filter: 'id=eq.main' }, () => {
+      void loadAlarmConfig()
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'station_status', filter: 'id=eq.main' }, (payload) => {
+      stationStatus.value = payload.new as StationStatus
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'bracelet_status', filter: 'id=eq.main' }, (payload) => {
+      braceletStatus.value = payload.new as BraceletStatus
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'music_tracks' }, () => {
+      void loadMusicTracks()
+    })
+    .subscribe()
+}
+
+function stopRealtimeUpdates() {
+  if (!realtimeChannel) return
+  const client = requireSupabase()
+  void client.removeChannel(realtimeChannel)
+  realtimeChannel = undefined
 }
 
 async function loadInitialData() {
@@ -414,7 +448,7 @@ function selectOffset(offset: number) {
 
 function isStale(updatedAt?: string) {
   if (!updatedAt) return true
-  return Date.now() - new Date(updatedAt).getTime() > 20_000
+  return Date.now() - new Date(updatedAt).getTime() > 90_000
 }
 
 function clearMessages() {
@@ -438,9 +472,7 @@ function showError(error: unknown) {
         <p class="eyebrow">Réveil actif</p>
         <h1>Starter</h1>
       </div>
-      <button class="icon-button" type="button" aria-label="Actualiser" :disabled="refreshing" @click="loadInitialData">
-        <RefreshCw :size="18" :class="{ spin: refreshing }" />
-      </button>
+      <span class="status-dot" :class="{ alert: refreshing || hasProblem || stationStale || braceletStale }"></span>
     </section>
 
     <section v-if="!canUseSupabase" class="notice danger">

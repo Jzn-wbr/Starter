@@ -14,6 +14,7 @@ rectangle "Wake-up PWA" {
   usecase "View station status" as ViewStationStatus
   usecase "View bracelet status" as ViewBraceletStatus
   usecase "View blocking problems" as ViewProblems
+  usecase "Receive automatic updates" as ReceiveUpdates
 }
 
 rectangle "Supabase" {
@@ -23,6 +24,7 @@ rectangle "Supabase" {
   usecase "Store alarm_audio_selection" as StoreAlarmAudio
   usecase "Expose station_status" as ExposeStationStatus
   usecase "Expose bracelet_status" as ExposeBraceletStatus
+  usecase "Publish realtime table changes" as PublishRealtime
 }
 
 User --> UploadMusic
@@ -33,6 +35,9 @@ User --> ConfigureAlarm
 User --> ViewStationStatus
 User --> ViewBraceletStatus
 User --> ViewProblems
+ReceiveUpdates --> ViewStationStatus
+ReceiveUpdates --> ViewBraceletStatus
+ReceiveUpdates --> ViewProblems
 
 UploadMusic --> StoreAudio
 UploadMusic --> StoreMusicMetadata
@@ -45,12 +50,19 @@ ViewStationStatus --> ExposeStationStatus
 ViewBraceletStatus --> ExposeBraceletStatus
 ViewProblems --> ExposeStationStatus
 ViewProblems --> ExposeBraceletStatus
+ExposeStationStatus --> PublishRealtime
+ExposeBraceletStatus --> PublishRealtime
+StoreAlarmPlan --> PublishRealtime
+StoreAlarmAudio --> PublishRealtime
+StoreMusicMetadata --> PublishRealtime
+ReceiveUpdates --> PublishRealtime
 
 note bottom of "Wake-up PWA"
   The PWA configures the system through Supabase.
   It does not trigger or stop the alarm directly.
   The app only proposes alarm slots in the next 20 hours.
-  Status polling runs only while the page is visible.
+  Supabase realtime updates refresh changed blocks automatically.
+  Status polling remains a visible-page fallback.
 end note
 
 @enduml

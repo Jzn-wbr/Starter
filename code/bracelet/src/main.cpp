@@ -1,8 +1,7 @@
 #include <Arduino.h>
-#include <DNSServer.h>
-#include <WebServer.h>
 #include <WiFi.h>
 #include <Wire.h>
+#include <esp_now.h>
 #include "SparkFun_BMI270_Arduino_Library.h"
 
 namespace
@@ -17,353 +16,143 @@ namespace
 
     constexpr uint32_t SERIAL_BAUD = 115200;
     constexpr uint32_t SAMPLE_PERIOD_MS = 20;
-    constexpr uint32_t BATTERY_REPORT_PERIOD_MS = 1000;
+    constexpr uint32_t SENSOR_RETRY_PERIOD_MS = 2000;
+    constexpr uint32_t BATTERY_SAMPLE_PERIOD_MS = 1000;
+    constexpr uint32_t TELEMETRY_LOG_PERIOD_MS = 5000;
 
-    constexpr char AP_SSID[] = "Bracelet-Test";
-    constexpr char AP_PASSWORD[] = "bracelet123";
-    constexpr byte DNS_PORT = 53;
+    constexpr uint32_t SEND_PERIOD_READY_MS = 5000;
+    constexpr uint32_t SEND_PERIOD_ARMED_MS = 2000;
+    constexpr uint32_t SEND_PERIOD_ACTIVE_MS = 200;
+    constexpr uint32_t SEND_PERIOD_FAULT_MS = 2000;
 
+    constexpr uint32_t VALIDATION_REQUIRED_MS = 15UL * 60UL * 1000UL;
+    constexpr uint32_t PAUSE_TOLERANCE_MS = 5000;
+    constexpr float ACTIVE_ACCEL_DELTA_G = 0.162F;
+    constexpr float ACTIVE_GYRO_DPS = 71.7F;
     constexpr float BATTERY_DIVIDER_RATIO = 2.0F;
+    constexpr float BATTERY_EMPTY_V = 3.30F;
+    constexpr float BATTERY_FULL_V = 4.20F;
+    constexpr uint8_t LOW_BATTERY_PERCENT = 30;
 
-    struct MotionSample
+    constexpr uint8_t PROTOCOL_VERSION = 1;
+    constexpr uint8_t MESSAGE_BRACELET_STATUS = 1;
+    constexpr uint8_t MESSAGE_STATION_CONTROL = 2;
+    constexpr uint8_t SENDER_STATION = 1;
+    constexpr uint8_t SENDER_BRACELET = 2;
+    constexpr uint8_t BATTERY_UNKNOWN = 255;
+
+    constexpr uint8_t FLAG_CHARGING = 1 << 0;
+    constexpr uint8_t FLAG_SENSOR_READY = 1 << 1;
+    constexpr uint8_t FLAG_MOTION_PRESENT = 1 << 2;
+
+    const uint8_t BROADCAST_PEER[ESP_NOW_ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+
+    enum class BraceletState : uint8_t
+    {
+        Charging = 1,
+        Ready = 2,
+        Active = 3,
+        Validated = 4,
+        LowBattery = 5,
+        Fault = 6,
+    };
+
+    enum class StationState : uint8_t
+    {
+        Unknown = 0,
+        Idle = 1,
+        Armed = 2,
+        Ringing = 3,
+        ValidatingActivity = 4,
+        Stopped = 5,
+        Fault = 6,
+    };
+
+    enum class ProblemCode : uint8_t
+    {
+        None = 0,
+        WifiUnavailable = 1,
+        SupabaseUnavailable = 2,
+        TimeUnknown = 3,
+        NoValidAlarmConfig = 4,
+        MusicStreamFailed = 5,
+        FallbackAudioFailed = 6,
+        BraceletMissing = 7,
+        BraceletLowBattery = 8,
+        BraceletFault = 9,
+        SensorFault = 10,
+        AudioFault = 11,
+        UnknownFault = 12,
+    };
+
+    struct __attribute__((packed)) PacketHeader
+    {
+        uint8_t protocolVersion;
+        uint8_t messageType;
+        uint8_t senderRole;
+        uint8_t deviceId[6];
+        uint32_t sequence;
+        uint32_t uptimeMs;
+    };
+
+    struct __attribute__((packed)) BraceletStatusPacket
+    {
+        PacketHeader header;
+        uint8_t braceletState;
+        uint8_t activityScore;
+        uint8_t validated;
+        uint8_t batteryPercent;
+        uint8_t faultCode;
+        uint8_t flags;
+    };
+
+    struct __attribute__((packed)) StationControlPacket
+    {
+        PacketHeader header;
+        uint8_t stationState;
+        uint32_t alarmRevision;
+        uint8_t activityRequired;
+        uint8_t thresholdProfile;
+    };
+
+    struct MotionReading
     {
         float accelX = 0.0F;
         float accelY = 0.0F;
-        float accelZ = 0.0F;
+        float accelZ = 1.0F;
         float gyroX = 0.0F;
         float gyroY = 0.0F;
         float gyroZ = 0.0F;
-        float batteryVoltage = 0.0F;
-        bool imuReady = false;
-        int8_t imuStatus = BMI2_E_NULL_PTR;
-        uint32_t updatedAtMs = 0;
+    };
+
+    struct ActivityTracker
+    {
+        uint32_t activeMs = 0;
+        uint32_t pauseMs = 0;
+        uint32_t lastUpdateMs = 0;
+        float scoreEma = 0.0F;
+        bool motionPresent = false;
+        bool validated = false;
     };
 
     BMI270 imu;
-    WebServer server(80);
-    DNSServer dnsServer;
-    MotionSample latestSample;
+    MotionReading latestMotion;
+    ActivityTracker activity;
+
+    uint8_t deviceId[6] = {};
+    uint32_t sequenceNumber = 0;
     uint32_t lastSampleMs = 0;
-    uint32_t lastBatteryReportMs = 0;
-    bool vibrationEnabled = false;
+    uint32_t lastSensorRetryMs = 0;
+    uint32_t lastBatterySampleMs = 0;
+    uint32_t lastSendMs = 0;
+    uint32_t lastLogMs = 0;
 
-    const char INDEX_HTML[] PROGMEM = R"HTML(
-<!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bracelet Test</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #101418;
-      color: #eef3f7;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at top left, rgba(34, 197, 94, .16), transparent 34rem),
-        linear-gradient(145deg, #101418 0%, #172027 58%, #11151a 100%);
-    }
-    main {
-      width: min(980px, 100%);
-      margin: 0 auto;
-      padding: 18px;
-    }
-    header {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 14px;
-      margin-bottom: 16px;
-    }
-    h1 {
-      margin: 0;
-      font-size: 26px;
-      font-weight: 760;
-      letter-spacing: 0;
-    }
-    .subtitle {
-      margin: 5px 0 0;
-      color: #9dafbd;
-      font-size: 14px;
-    }
-    .panel {
-      border: 1px solid rgba(255,255,255,.09);
-      background: rgba(18, 25, 31, .82);
-      border-radius: 8px;
-      box-shadow: 0 14px 45px rgba(0,0,0,.28);
-    }
-    .status-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .metric {
-      padding: 13px;
-    }
-    .label {
-      color: #9dafbd;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-    }
-    .value {
-      margin-top: 7px;
-      font-size: 24px;
-      font-weight: 730;
-      font-variant-numeric: tabular-nums;
-    }
-    .vibration-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-top: 7px;
-    }
-    .led {
-      width: 17px;
-      height: 17px;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,.24);
-      background: #36424c;
-      box-shadow: inset 0 0 9px rgba(0,0,0,.45);
-      flex: 0 0 auto;
-    }
-    .led.on {
-      background: #22c55e;
-      box-shadow: 0 0 18px rgba(34,197,94,.9), inset 0 0 6px rgba(255,255,255,.35);
-    }
-    button {
-      border: 0;
-      border-radius: 8px;
-      padding: 12px 14px;
-      background: #eef3f7;
-      color: #11151a;
-      font-weight: 760;
-      font-size: 14px;
-      min-width: 150px;
-    }
-    button.active {
-      background: #ef4444;
-      color: #fff;
-    }
-    .chart-panel {
-      padding: 12px;
-      margin-top: 12px;
-    }
-    .chart-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      margin: 0 0 8px;
-      color: #c7d2dc;
-      font-size: 14px;
-      font-weight: 700;
-    }
-    canvas {
-      width: 100%;
-      height: 245px;
-      display: block;
-      border-radius: 6px;
-      background: #0c1014;
-    }
-    .legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      color: #9dafbd;
-      font-size: 12px;
-    }
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .swatch {
-      width: 16px;
-      height: 3px;
-      border-radius: 999px;
-    }
-    @media (max-width: 680px) {
-      main { padding: 13px; }
-      header { align-items: flex-start; flex-direction: column; }
-      .status-grid { grid-template-columns: 1fr; }
-      button { width: 100%; }
-      canvas { height: 210px; }
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <header>
-      <div>
-        <h1>Bracelet Test</h1>
-        <p class="subtitle">Connecte-toi au WiFi Bracelet-Test puis ouvre 192.168.4.1</p>
-      </div>
-      <button id="vibrationButton" type="button">Enable vibration</button>
-    </header>
-
-    <section class="status-grid">
-      <div class="panel metric">
-        <div class="label">Batterie</div>
-        <div id="battery" class="value">--.-- V</div>
-      </div>
-      <div class="panel metric">
-        <div class="label">BMI270</div>
-        <div id="imuStatus" class="value">---</div>
-      </div>
-      <div class="panel metric">
-        <div class="label">Vibration</div>
-        <div class="vibration-row">
-          <span id="vibrationLed" class="led"></span>
-          <span id="vibrationText" class="value">Off</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel chart-panel">
-      <div class="chart-title">
-        <span>Accel g</span>
-        <span class="legend">
-          <span class="chip"><span class="swatch" style="background:#38bdf8"></span>X</span>
-          <span class="chip"><span class="swatch" style="background:#f97316"></span>Y</span>
-          <span class="chip"><span class="swatch" style="background:#22c55e"></span>Z</span>
-        </span>
-      </div>
-      <canvas id="accelChart"></canvas>
-    </section>
-
-    <section class="panel chart-panel">
-      <div class="chart-title">
-        <span>Gyro deg/s</span>
-        <span class="legend">
-          <span class="chip"><span class="swatch" style="background:#38bdf8"></span>X</span>
-          <span class="chip"><span class="swatch" style="background:#f97316"></span>Y</span>
-          <span class="chip"><span class="swatch" style="background:#22c55e"></span>Z</span>
-        </span>
-      </div>
-      <canvas id="gyroChart"></canvas>
-    </section>
-  </main>
-
-  <script>
-    const maxPoints = 120;
-    const accelHistory = [];
-    const gyroHistory = [];
-    const colors = ['#38bdf8', '#f97316', '#22c55e'];
-    const accelCanvas = document.getElementById('accelChart');
-    const gyroCanvas = document.getElementById('gyroChart');
-    const batteryEl = document.getElementById('battery');
-    const imuStatusEl = document.getElementById('imuStatus');
-    const vibrationLed = document.getElementById('vibrationLed');
-    const vibrationText = document.getElementById('vibrationText');
-    const vibrationButton = document.getElementById('vibrationButton');
-
-    function fitCanvas(canvas) {
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      const width = Math.max(1, Math.floor(rect.width * dpr));
-      const height = Math.max(1, Math.floor(rect.height * dpr));
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width;
-        canvas.height = height;
-      }
-    }
-
-    function pushPoint(history, point) {
-      history.push(point);
-      while (history.length > maxPoints) history.shift();
-    }
-
-    function drawChart(canvas, history, minValue, maxValue) {
-      fitCanvas(canvas);
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width;
-      const h = canvas.height;
-      ctx.clearRect(0, 0, w, h);
-
-      ctx.strokeStyle = 'rgba(255,255,255,.08)';
-      ctx.lineWidth = 1;
-      for (let i = 1; i < 5; i++) {
-        const y = (h * i) / 5;
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y);
-        ctx.stroke();
-      }
-
-      const zeroY = h - ((0 - minValue) / (maxValue - minValue)) * h;
-      ctx.strokeStyle = 'rgba(255,255,255,.18)';
-      ctx.beginPath();
-      ctx.moveTo(0, zeroY);
-      ctx.lineTo(w, zeroY);
-      ctx.stroke();
-
-      ['x', 'y', 'z'].forEach((key, seriesIndex) => {
-        ctx.strokeStyle = colors[seriesIndex];
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        history.forEach((point, index) => {
-          const x = history.length <= 1 ? w : (index / (maxPoints - 1)) * w;
-          const clamped = Math.max(minValue, Math.min(maxValue, point[key]));
-          const y = h - ((clamped - minValue) / (maxValue - minValue)) * h;
-          if (index === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-      });
-    }
-
-    function updateVibrationUi(enabled) {
-      vibrationLed.classList.toggle('on', enabled);
-      vibrationText.textContent = enabled ? 'On' : 'Off';
-      vibrationButton.textContent = enabled ? 'Disable vibration' : 'Enable vibration';
-      vibrationButton.classList.toggle('active', enabled);
-    }
-
-    async function poll() {
-      try {
-        const response = await fetch('/api/sample', { cache: 'no-store' });
-        const data = await response.json();
-        batteryEl.textContent = data.battery_v.toFixed(2) + ' V';
-        imuStatusEl.textContent = data.imu_ready ? 'OK' : 'Fault';
-        updateVibrationUi(data.vibration_enabled);
-        pushPoint(accelHistory, { x: data.accel_x_g, y: data.accel_y_g, z: data.accel_z_g });
-        pushPoint(gyroHistory, { x: data.gyro_x_dps, y: data.gyro_y_dps, z: data.gyro_z_dps });
-        drawChart(accelCanvas, accelHistory, -2, 2);
-        drawChart(gyroCanvas, gyroHistory, -500, 500);
-      } catch (error) {
-        imuStatusEl.textContent = 'Offline';
-      }
-    }
-
-    vibrationButton.addEventListener('click', async () => {
-      const nextState = !vibrationButton.classList.contains('active');
-      await fetch('/api/vibration', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'enabled=' + (nextState ? '1' : '0')
-      });
-      updateVibrationUi(nextState);
-    });
-
-    window.addEventListener('resize', () => {
-      drawChart(accelCanvas, accelHistory, -2, 2);
-      drawChart(gyroCanvas, gyroHistory, -500, 500);
-    });
-
-    setInterval(poll, 100);
-    poll();
-  </script>
-</body>
-</html>
-)HTML";
+    bool sensorReady = false;
+    bool espNowReady = false;
+    float batteryVoltage = 0.0F;
+    uint8_t batteryPercent = BATTERY_UNKNOWN;
+    StationState stationState = StationState::Unknown;
+    bool stationRequiresActivity = false;
 
     bool beginBmi270()
     {
@@ -389,13 +178,93 @@ namespace
         return (static_cast<float>(measuredMillivolts) * BATTERY_DIVIDER_RATIO) / 1000.0F;
     }
 
-    void setVibrationEnabled(bool enabled)
+    uint8_t estimateBatteryPercent(float voltage)
     {
-        vibrationEnabled = enabled;
-        digitalWrite(Pin::VIBRATION_MOTOR, vibrationEnabled ? HIGH : LOW);
+        if (voltage <= 0.1F)
+        {
+            return BATTERY_UNKNOWN;
+        }
+
+        const float ratio = (voltage - BATTERY_EMPTY_V) / (BATTERY_FULL_V - BATTERY_EMPTY_V);
+        const int percent = static_cast<int>(roundf(constrain(ratio, 0.0F, 1.0F) * 100.0F));
+        return static_cast<uint8_t>(percent);
     }
 
-    void updateMotionSample()
+    bool isBatteryLow()
+    {
+        return batteryPercent != BATTERY_UNKNOWN && batteryPercent < LOW_BATTERY_PERCENT;
+    }
+
+    void updateBattery()
+    {
+        const uint32_t now = millis();
+        if (now - lastBatterySampleMs < BATTERY_SAMPLE_PERIOD_MS)
+        {
+            return;
+        }
+
+        lastBatterySampleMs = now;
+        batteryVoltage = readBatteryVoltage();
+        batteryPercent = estimateBatteryPercent(batteryVoltage);
+    }
+
+    float magnitude3(float x, float y, float z)
+    {
+        return sqrtf((x * x) + (y * y) + (z * z));
+    }
+
+    uint8_t calculateInstantScore(const MotionReading &reading)
+    {
+        const float accelDelta = fabsf(magnitude3(reading.accelX, reading.accelY, reading.accelZ) - 1.0F);
+        const float gyroMagnitude = magnitude3(reading.gyroX, reading.gyroY, reading.gyroZ);
+        const float accelScore = constrain((accelDelta / 0.65F) * 100.0F, 0.0F, 100.0F);
+        const float gyroScore = constrain((gyroMagnitude / 240.0F) * 100.0F, 0.0F, 100.0F);
+        return static_cast<uint8_t>(roundf(max(accelScore, gyroScore)));
+    }
+
+    void updateActivity(const MotionReading &reading)
+    {
+        const uint32_t now = millis();
+        if (activity.lastUpdateMs == 0)
+        {
+            activity.lastUpdateMs = now;
+            return;
+        }
+
+        const uint32_t dt = now - activity.lastUpdateMs;
+        activity.lastUpdateMs = now;
+
+        const float accelDelta = fabsf(magnitude3(reading.accelX, reading.accelY, reading.accelZ) - 1.0F);
+        const float gyroMagnitude = magnitude3(reading.gyroX, reading.gyroY, reading.gyroZ);
+        const bool moving = accelDelta >= ACTIVE_ACCEL_DELTA_G || gyroMagnitude >= ACTIVE_GYRO_DPS;
+        const uint8_t instantScore = calculateInstantScore(reading);
+
+        activity.scoreEma = (activity.scoreEma * 0.85F) + (static_cast<float>(instantScore) * 0.15F);
+        activity.motionPresent = moving;
+
+        if (moving)
+        {
+            activity.activeMs += dt;
+            activity.pauseMs = 0;
+        }
+        else if (activity.pauseMs + dt <= PAUSE_TOLERANCE_MS)
+        {
+            activity.pauseMs += dt;
+        }
+        else
+        {
+            activity.activeMs = 0;
+            activity.pauseMs = 0;
+            activity.validated = false;
+        }
+
+        if (activity.activeMs >= VALIDATION_REQUIRED_MS)
+        {
+            activity.validated = true;
+        }
+    }
+
+    void updateMotion()
     {
         const uint32_t now = millis();
         if (now - lastSampleMs < SAMPLE_PERIOD_MS)
@@ -404,107 +273,246 @@ namespace
         }
 
         lastSampleMs = now;
-        latestSample.batteryVoltage = readBatteryVoltage();
-        latestSample.updatedAtMs = now;
 
-        if (!latestSample.imuReady)
+        if (!sensorReady)
         {
-            latestSample.imuReady = beginBmi270();
-            if (!latestSample.imuReady)
+            if (now - lastSensorRetryMs >= SENSOR_RETRY_PERIOD_MS)
             {
-                latestSample.imuStatus = BMI2_E_DEV_NOT_FOUND;
-                return;
+                lastSensorRetryMs = now;
+                sensorReady = beginBmi270();
             }
-        }
-
-        latestSample.imuStatus = imu.getSensorData();
-        if (latestSample.imuStatus != BMI2_OK)
-        {
-            latestSample.imuReady = false;
             return;
         }
 
-        latestSample.accelX = imu.data.accelX;
-        latestSample.accelY = imu.data.accelY;
-        latestSample.accelZ = imu.data.accelZ;
-        latestSample.gyroX = imu.data.gyroX;
-        latestSample.gyroY = imu.data.gyroY;
-        latestSample.gyroZ = imu.data.gyroZ;
+        const int8_t status = imu.getSensorData();
+        if (status != BMI2_OK)
+        {
+            sensorReady = false;
+            Serial.print("bmi270_read_error:");
+            Serial.println(status);
+            return;
+        }
+
+        latestMotion.accelX = imu.data.accelX;
+        latestMotion.accelY = imu.data.accelY;
+        latestMotion.accelZ = imu.data.accelZ;
+        latestMotion.gyroX = imu.data.gyroX;
+        latestMotion.gyroY = imu.data.gyroY;
+        latestMotion.gyroZ = imu.data.gyroZ;
+        updateActivity(latestMotion);
     }
 
-    void reportBatteryVoltage()
+    BraceletState currentBraceletState()
+    {
+        if (!sensorReady)
+        {
+            return BraceletState::Fault;
+        }
+        if (isBatteryLow())
+        {
+            return BraceletState::LowBattery;
+        }
+        if (activity.validated)
+        {
+            return BraceletState::Validated;
+        }
+        if (activity.motionPresent)
+        {
+            return BraceletState::Active;
+        }
+        return BraceletState::Ready;
+    }
+
+    ProblemCode currentFaultCode()
+    {
+        if (!sensorReady)
+        {
+            return ProblemCode::SensorFault;
+        }
+        if (isBatteryLow())
+        {
+            return ProblemCode::BraceletLowBattery;
+        }
+        return ProblemCode::None;
+    }
+
+    uint8_t currentFlags()
+    {
+        uint8_t flags = 0;
+        if (sensorReady)
+        {
+            flags |= FLAG_SENSOR_READY;
+        }
+        if (activity.motionPresent)
+        {
+            flags |= FLAG_MOTION_PRESENT;
+        }
+        return flags;
+    }
+
+    void fillHeader(PacketHeader &header, uint8_t messageType)
+    {
+        header.protocolVersion = PROTOCOL_VERSION;
+        header.messageType = messageType;
+        header.senderRole = SENDER_BRACELET;
+        memcpy(header.deviceId, deviceId, sizeof(deviceId));
+        header.sequence = sequenceNumber++;
+        header.uptimeMs = millis();
+    }
+
+    uint32_t currentSendPeriod()
+    {
+        const BraceletState state = currentBraceletState();
+        if (state == BraceletState::Fault || state == BraceletState::LowBattery)
+        {
+            return SEND_PERIOD_FAULT_MS;
+        }
+        if (stationState == StationState::Ringing || stationState == StationState::ValidatingActivity || stationRequiresActivity)
+        {
+            return SEND_PERIOD_ACTIVE_MS;
+        }
+        if (stationState == StationState::Armed)
+        {
+            return SEND_PERIOD_ARMED_MS;
+        }
+        return SEND_PERIOD_READY_MS;
+    }
+
+    void sendBraceletStatus(bool force = false)
+    {
+        if (!espNowReady)
+        {
+            return;
+        }
+
+        const uint32_t now = millis();
+        if (!force && now - lastSendMs < currentSendPeriod())
+        {
+            return;
+        }
+
+        lastSendMs = now;
+
+        BraceletStatusPacket packet = {};
+        fillHeader(packet.header, MESSAGE_BRACELET_STATUS);
+        packet.braceletState = static_cast<uint8_t>(currentBraceletState());
+        packet.activityScore = static_cast<uint8_t>(roundf(constrain(activity.scoreEma, 0.0F, 100.0F)));
+        packet.validated = activity.validated ? 1 : 0;
+        packet.batteryPercent = batteryPercent;
+        packet.faultCode = static_cast<uint8_t>(currentFaultCode());
+        packet.flags = currentFlags();
+
+        const esp_err_t result = esp_now_send(BROADCAST_PEER, reinterpret_cast<const uint8_t *>(&packet), sizeof(packet));
+        if (result != ESP_OK)
+        {
+            Serial.print("espnow_send_error:");
+            Serial.println(result);
+        }
+    }
+
+    void handleStationControl(const uint8_t *data, int length)
+    {
+        if (length != static_cast<int>(sizeof(StationControlPacket)))
+        {
+            return;
+        }
+
+        StationControlPacket packet = {};
+        memcpy(&packet, data, sizeof(packet));
+        if (packet.header.protocolVersion != PROTOCOL_VERSION ||
+            packet.header.messageType != MESSAGE_STATION_CONTROL ||
+            packet.header.senderRole != SENDER_STATION)
+        {
+            return;
+        }
+
+        stationState = static_cast<StationState>(packet.stationState);
+        stationRequiresActivity = packet.activityRequired != 0;
+        sendBraceletStatus(true);
+    }
+
+    void onEspNowReceive(const uint8_t *, const uint8_t *data, int length)
+    {
+        if (length < static_cast<int>(sizeof(PacketHeader)))
+        {
+            return;
+        }
+
+        const PacketHeader *header = reinterpret_cast<const PacketHeader *>(data);
+        if (header->protocolVersion == PROTOCOL_VERSION && header->messageType == MESSAGE_STATION_CONTROL)
+        {
+            handleStationControl(data, length);
+        }
+    }
+
+    void onEspNowSent(const uint8_t *, esp_now_send_status_t status)
+    {
+        if (status != ESP_NOW_SEND_SUCCESS)
+        {
+            Serial.println("espnow_send_status:failed");
+        }
+    }
+
+    bool beginEspNow()
+    {
+        WiFi.mode(WIFI_STA);
+        WiFi.disconnect();
+        WiFi.macAddress(deviceId);
+
+        Serial.print("bracelet_mac:");
+        Serial.println(WiFi.macAddress());
+
+        if (esp_now_init() != ESP_OK)
+        {
+            Serial.println("espnow_status:init_failed");
+            return false;
+        }
+
+        esp_now_register_recv_cb(onEspNowReceive);
+        esp_now_register_send_cb(onEspNowSent);
+
+        esp_now_peer_info_t peer = {};
+        memcpy(peer.peer_addr, BROADCAST_PEER, ESP_NOW_ETH_ALEN);
+        peer.channel = 0;
+        peer.encrypt = false;
+
+        if (esp_now_add_peer(&peer) != ESP_OK)
+        {
+            Serial.println("espnow_status:add_broadcast_peer_failed");
+            return false;
+        }
+
+        Serial.println("espnow_status:ready");
+        return true;
+    }
+
+    void updateVibrationMotor()
+    {
+        const bool pulse = stationRequiresActivity && !activity.validated && ((millis() / 500) % 2 == 0);
+        digitalWrite(Pin::VIBRATION_MOTOR, pulse ? HIGH : LOW);
+    }
+
+    void logTelemetry()
     {
         const uint32_t now = millis();
-        if (now - lastBatteryReportMs < BATTERY_REPORT_PERIOD_MS)
+        if (now - lastLogMs < TELEMETRY_LOG_PERIOD_MS)
         {
             return;
         }
 
-        lastBatteryReportMs = now;
-        Serial.print(">battery_v:");
-        Serial.println(latestSample.batteryVoltage, 3);
-    }
-
-    void handleIndex()
-    {
-        server.send_P(200, "text/html", INDEX_HTML);
-    }
-
-    void handleSampleApi()
-    {
-        char json[384];
-        snprintf(json, sizeof(json),
-                 "{\"accel_x_g\":%.4f,\"accel_y_g\":%.4f,\"accel_z_g\":%.4f,"
-                 "\"gyro_x_dps\":%.3f,\"gyro_y_dps\":%.3f,\"gyro_z_dps\":%.3f,"
-                 "\"battery_v\":%.3f,\"vibration_enabled\":%s,\"imu_ready\":%s,"
-                 "\"imu_status\":%d,\"updated_at_ms\":%lu}",
-                 latestSample.accelX,
-                 latestSample.accelY,
-                 latestSample.accelZ,
-                 latestSample.gyroX,
-                 latestSample.gyroY,
-                 latestSample.gyroZ,
-                 latestSample.batteryVoltage,
-                 vibrationEnabled ? "true" : "false",
-                 latestSample.imuReady ? "true" : "false",
-                 latestSample.imuStatus,
-                 static_cast<unsigned long>(latestSample.updatedAtMs));
-
-        server.send(200, "application/json", json);
-    }
-
-    void handleVibrationApi()
-    {
-        const bool enabled = server.hasArg("enabled") && server.arg("enabled") == "1";
-        setVibrationEnabled(enabled);
-        server.send(200, "application/json", enabled ? "{\"vibration_enabled\":true}" : "{\"vibration_enabled\":false}");
-    }
-
-    void handleNotFound()
-    {
-        server.sendHeader("Location", "/", true);
-        server.send(302, "text/plain", "");
-    }
-
-    void beginDebugWifi()
-    {
-        WiFi.mode(WIFI_AP);
-        WiFi.softAP(AP_SSID, AP_PASSWORD);
-        const IPAddress apIp = WiFi.softAPIP();
-
-        dnsServer.start(DNS_PORT, "*", apIp);
-        server.on("/", HTTP_GET, handleIndex);
-        server.on("/api/sample", HTTP_GET, handleSampleApi);
-        server.on("/api/vibration", HTTP_POST, handleVibrationApi);
-        server.onNotFound(handleNotFound);
-        server.begin();
-
-        Serial.print("wifi_ap_ssid:");
-        Serial.println(AP_SSID);
-        Serial.print("wifi_ap_password:");
-        Serial.println(AP_PASSWORD);
-        Serial.print("wifi_ap_ip:");
-        Serial.println(apIp);
+        lastLogMs = now;
+        Serial.print("bracelet_state:");
+        Serial.print(static_cast<uint8_t>(currentBraceletState()));
+        Serial.print(",activity_score:");
+        Serial.print(static_cast<uint8_t>(roundf(constrain(activity.scoreEma, 0.0F, 100.0F))));
+        Serial.print(",active_ms:");
+        Serial.print(activity.activeMs);
+        Serial.print(",validated:");
+        Serial.print(activity.validated ? "true" : "false");
+        Serial.print(",battery_percent:");
+        Serial.print(batteryPercent);
+        Serial.print(",battery_v:");
+        Serial.println(batteryVoltage, 3);
     }
 }
 
@@ -514,21 +522,25 @@ void setup()
     delay(500);
 
     pinMode(Pin::VIBRATION_MOTOR, OUTPUT);
-    setVibrationEnabled(false);
+    digitalWrite(Pin::VIBRATION_MOTOR, LOW);
     analogReadResolution(12);
     analogSetPinAttenuation(Pin::BATTERY_ADC, ADC_11db);
 
     Wire.begin(Pin::IMU_SDA, Pin::IMU_SCL);
     Wire.setClock(400000);
-    latestSample.imuReady = beginBmi270();
 
-    beginDebugWifi();
+    sensorReady = beginBmi270();
+    batteryVoltage = readBatteryVoltage();
+    batteryPercent = estimateBatteryPercent(batteryVoltage);
+    espNowReady = beginEspNow();
+    sendBraceletStatus(true);
 }
 
 void loop()
 {
-    dnsServer.processNextRequest();
-    server.handleClient();
-    updateMotionSample();
-    reportBatteryVoltage();
+    updateBattery();
+    updateMotion();
+    updateVibrationMotor();
+    sendBraceletStatus();
+    logTelemetry();
 }

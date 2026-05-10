@@ -1,0 +1,57 @@
+@startuml
+title Bracelet Firmware Flow
+
+start
+:Configure vibration motor output on IO0;
+:Configure battery ADC input on IO1;
+:Start I2C on SDA IO3 and SCL IO2;
+:Initialize BMI270 on address 0x68 or 0x69;
+:Estimate battery percent from divided LiPo voltage;
+:Start WiFi station mode without AP;
+:Initialize ESP-NOW broadcast telemetry peer;
+:Send initial bracelet_status packet;
+
+repeat
+  :Sample battery once per second;
+  if (BMI270 ready?) then (yes)
+    :Read accelerometer and gyroscope at 50 Hz;
+    :Compute movement intensity score;
+    if (movement above threshold?) then (yes)
+      :Add elapsed time to sustained activity;
+      :Clear tolerated pause timer;
+    else (no)
+      if (pause <= 5 seconds?) then (yes)
+        :Keep current sustained activity total;
+      else (no)
+        :Reset sustained activity validation;
+      endif
+    endif
+    if (sustained activity >= 15 minutes?) then (yes)
+      :Set validated=true;
+    endif
+  else (no)
+    :Retry BMI270 initialization every 2 seconds;
+  endif
+
+  if (station_control received?) then (yes)
+    :Store station state and activity_required flag;
+    :Send bracelet_status immediately;
+  endif
+
+  if (sensor fault?) then (yes)
+    :Report state=fault and fault_code=sensor_fault;
+  elseif (battery < 30 percent?) then (yes)
+    :Report state=low_battery and fault_code=bracelet_low_battery;
+  elseif (validated?) then (yes)
+    :Report state=validated and validated=true;
+  elseif (motion present?) then (yes)
+    :Report state=active;
+  else (no)
+    :Report state=ready;
+  endif
+
+  :Send bracelet_status by ESP-NOW at rate based on station/alarm state;
+  :Pulse vibration motor only while station requests activity and validation is not done;
+repeat while (device powered)
+
+@enduml

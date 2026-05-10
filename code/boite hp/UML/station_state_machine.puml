@@ -1,0 +1,37 @@
+@startuml
+title Bedside station v1 state machine
+
+[*] --> Booting
+Booting --> idle : WiFi, NTP and audio ready\nno enabled alarm
+Booting --> armed : valid enabled alarm loaded
+Booting --> fault : blocking fault
+
+idle --> armed : enabled alarm loaded
+idle --> fault : time/config/audio fault
+
+armed --> idle : alarm disabled
+armed --> ringing : local alarm time reached\nbracelet ready
+armed --> fault : no valid time/config\nbracelet missing/low/fault
+
+ringing --> validating_activity : bracelet packets present
+ringing --> fault : audio fault or bracelet timeout
+
+validating_activity --> stopped : bracelet validated sustained activity
+validating_activity --> fault : bracelet/audio fault
+
+stopped --> idle : alarm cycle complete
+
+fault --> idle : problem fixed\nno enabled alarm
+fault --> armed : problem fixed\nvalid enabled alarm
+
+note right of ringing
+Supabase track playback failure does not stop alarm.
+The station switches to generated local fallback audio.
+end note
+
+note bottom
+There is no normal stop or snooze transition.
+Only bracelet validation can stop an active alarm.
+end note
+
+@enduml

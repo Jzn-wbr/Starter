@@ -93,6 +93,15 @@ Useful command from this folder:
 pio run
 ```
 
+Temporary BMI270 movement-threshold measurement firmware:
+
+```powershell
+pio run -e bracelet-thresholds -t upload
+pio device monitor -b 115200
+```
+
+The threshold firmware is a development tool only. It measures immobile and real-use movement data, then suggests `ACTIVE_ACCEL_DELTA_G` and `ACTIVE_GYRO_DPS` values for the product firmware. The older `bracelet-calibration` environment remains as an alias for this same threshold tool.
+
 Before finishing, report:
 
 - Files changed.

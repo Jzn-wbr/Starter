@@ -25,7 +25,7 @@ The current firmware already:
 
 - Connects to WiFi.
 - Uses `ESP32-audioI2S`.
-- Streams audio from `STREAM_URL`.
+- Loads the selected track from `alarm_audio_selection` and `music_tracks`.
 - Outputs audio over I2S pins for the PCM5102A/PAM8403 audio chain.
 
 The current code is still a prototype. Do not assume that alarm scheduling, Supabase config fetching, ESP-NOW bracelet communication, or NTP synchronization already exist unless the code proves it.

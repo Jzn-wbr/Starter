@@ -11,7 +11,5 @@ Rules:
 
 Suggested starting diagrams:
 
-- `class_overview.puml`
 - `alarm_state_machine.puml`
 - `communication_flow.puml`
-

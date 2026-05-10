@@ -1,0 +1,31 @@
+@startuml
+title Bracelet ESP-NOW Packet Flow
+
+participant "Bracelet ESP32-C3" as Bracelet
+participant "Station ESP32" as Station
+
+Bracelet -> Bracelet : Read MAC as 6-byte device_id
+Bracelet -> Bracelet : Initialize ESP-NOW in WiFi STA mode
+Bracelet -> Station : bracelet_status broadcast\nprotocol=1, type=1, role=bracelet\nstate, score, validated, battery, fault, flags
+
+loop normal ready state
+  Bracelet -> Station : bracelet_status every 5 s
+end
+
+Station -> Bracelet : station_control optional\nprotocol=1, type=2, role=station\nstation_state, revision, activity_required, profile
+Bracelet -> Station : immediate bracelet_status reply
+
+alt station ringing or activity_required=true
+  Bracelet -> Station : bracelet_status at 5 Hz
+else station armed
+  Bracelet -> Station : bracelet_status every 2 s
+else bracelet fault or low battery
+  Bracelet -> Station : bracelet_status every 2 s
+end
+
+note right of Station
+Station remains the alarm authority.
+validated=true is an input, not a direct stop command.
+end note
+
+@enduml
