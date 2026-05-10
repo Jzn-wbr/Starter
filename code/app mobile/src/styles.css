@@ -261,6 +261,56 @@ h2 {
   font-weight: 800;
 }
 
+.alarm-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 13px 14px;
+  border-radius: 16px;
+  background: #ecfdf5;
+}
+
+.alarm-summary.inactive {
+  background: #fff7ed;
+}
+
+.alarm-summary p {
+  margin: 0;
+  color: #66756f;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.alarm-summary strong {
+  font-size: 0.98rem;
+}
+
+.toggle-alarm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: #115e59;
+  background: #ffffff;
+  font-weight: 900;
+}
+
+.toggle-alarm .dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  background: #10b981;
+}
+
+.toggle-alarm .dot.off {
+  background: #f97316;
+}
+
 .volume-control {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -310,6 +360,11 @@ h2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.status-card-wide {
+  grid-column: span 2;
+  min-height: auto;
 }
 
 .status-card {

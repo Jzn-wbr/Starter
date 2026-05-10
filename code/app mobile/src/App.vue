@@ -73,6 +73,12 @@ const selectedAudioLabel = computed(() => {
   if (audioSelection.value?.audio_source === 'fallback') return 'Son de secours local'
   return selectedTrack.value?.title ?? 'Aucune musique sélectionnée'
 })
+const configuredAlarmLabel = computed(() => {
+  if (!alarmPlan.value?.alarm_date || !alarmPlan.value?.alarm_time) return 'Aucune heure enregistrée'
+  const date = new Date(`${alarmPlan.value.alarm_date}T${alarmPlan.value.alarm_time}`)
+  return `${date.toLocaleDateString('fr-CH', { weekday: 'long', day: '2-digit', month: 'long' })} à ${date.toLocaleTimeString('fr-CH', { hour: '2-digit', minute: '2-digit', hour12: false })}`
+})
+const alarmIsActive = computed(() => Boolean(alarmPlan.value?.enabled))
 const hasProblem = computed(() => {
   return stationStatus.value?.problem_code !== 'none' || braceletStatus.value?.problem_code !== 'none'
 })
@@ -263,7 +269,7 @@ async function saveAlarm() {
       .from('alarm_plan')
       .upsert({
         id: 'main',
-        enabled: true,
+        enabled: alarmPlan.value?.enabled ?? true,
         alarm_date: selectedSlot.value.isoDate,
         alarm_time: selectedSlot.value.sqlTime,
         timezone: 'Europe/Zurich',
@@ -290,6 +296,32 @@ async function saveAlarm() {
     alarmPlan.value = planData as AlarmPlan
     audioSelection.value = audioData as AlarmAudioSelection
     successMessage.value = 'Alarme enregistrée.'
+  } catch (error) {
+    showError(error)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function toggleAlarmEnabled() {
+  if (!alarmPlan.value || !canUseSupabase.value) return
+  clearMessages()
+  saving.value = true
+  try {
+    const client = requireSupabase()
+    const { data, error } = await client
+      .from('alarm_plan')
+      .upsert({
+        ...alarmPlan.value,
+        enabled: !alarmPlan.value.enabled,
+        revision: (alarmPlan.value.revision ?? 1) + 1,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    alarmPlan.value = data as AlarmPlan
+    successMessage.value = alarmPlan.value.enabled ? 'Alarme activée.' : 'Alarme désactivée.'
   } catch (error) {
     showError(error)
   } finally {
@@ -505,6 +537,16 @@ function showError(error: unknown) {
             </div>
             <span class="soft-pill">{{ selectedSlot ? formatRelativeHours(selectedSlot.hoursFromNow) : 'Aucun créneau' }}</span>
           </div>
+          <div class="alarm-summary" :class="{ inactive: !alarmIsActive }">
+            <div>
+              <p>Alarme fixée</p>
+              <strong>{{ configuredAlarmLabel }}</strong>
+            </div>
+            <button class="toggle-alarm" type="button" :disabled="saving || !canUseSupabase" @click="toggleAlarmEnabled">
+              <span class="dot" :class="{ off: !alarmIsActive }"></span>
+              {{ alarmIsActive ? 'Active' : 'Inactive' }}
+            </button>
+          </div>
 
           <div class="time-wheel" aria-label="Roue horaire des 20 prochaines heures">
             <button class="wheel-step" type="button" :disabled="selectedSlotIndex === 0" @click="selectOffset(-1)">
@@ -575,7 +617,7 @@ function showError(error: unknown) {
               <small v-if="braceletStale">Statut ancien</small>
             </button>
 
-            <button class="status-card" type="button" @click="detailsOpen = !detailsOpen">
+            <button class="status-card status-card-wide" type="button" @click="detailsOpen = !detailsOpen">
               <BatteryCharging v-if="braceletStatus?.bracelet_state === 'charging'" :size="22" />
               <Battery v-else :size="22" />
               <span>Batterie</span>
@@ -588,7 +630,7 @@ function showError(error: unknown) {
               </strong>
             </button>
 
-            <button class="status-card" type="button" @click="detailsOpen = !detailsOpen">
+            <button class="status-card status-card-wide" type="button" @click="detailsOpen = !detailsOpen">
               <ShieldAlert v-if="hasProblem" :size="22" />
               <Activity v-else :size="22" />
               <span>Diagnostic</span>
