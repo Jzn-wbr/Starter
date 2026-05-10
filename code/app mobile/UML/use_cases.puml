@@ -11,6 +11,8 @@ rectangle "Wake-up PWA" {
   usecase "Select wake-up track" as SelectTrack
   usecase "Select local fallback sound" as SelectFallback
   usecase "Configure tomorrow alarm" as ConfigureAlarm
+  usecase "View saved alarm time" as ViewSavedAlarm
+  usecase "Enable or disable saved alarm" as ToggleAlarm
   usecase "View station status" as ViewStationStatus
   usecase "View bracelet status" as ViewBraceletStatus
   usecase "View blocking problems" as ViewProblems
@@ -32,6 +34,8 @@ User --> BrowseMusic
 User --> SelectTrack
 User --> SelectFallback
 User --> ConfigureAlarm
+User --> ViewSavedAlarm
+User --> ToggleAlarm
 User --> ViewStationStatus
 User --> ViewBraceletStatus
 User --> ViewProblems
@@ -46,6 +50,8 @@ SelectTrack --> StoreAlarmAudio
 SelectFallback --> StoreAlarmAudio
 ConfigureAlarm --> StoreAlarmPlan
 ConfigureAlarm --> StoreAlarmAudio
+ViewSavedAlarm --> StoreAlarmPlan
+ToggleAlarm --> StoreAlarmPlan
 ViewStationStatus --> ExposeStationStatus
 ViewBraceletStatus --> ExposeBraceletStatus
 ViewProblems --> ExposeStationStatus
