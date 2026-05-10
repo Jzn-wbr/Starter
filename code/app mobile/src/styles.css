@@ -172,6 +172,57 @@ h2 {
   margin: 10px 0 18px;
 }
 
+.alarm-highlight {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 14px;
+  border-radius: 17px;
+  background: #f1f8f5;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+}
+
+.alarm-highlight small {
+  display: block;
+  color: #66756f;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.alarm-highlight strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 1.4rem;
+}
+
+.alarm-highlight span {
+  color: #66756f;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.alarm-chip {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.alarm-chip.active {
+  color: #065f46;
+  background: #d1fae5;
+}
+
+.alarm-chip.inactive {
+  color: #9a3412;
+  background: #ffedd5;
+}
+
 .wheel-face {
   position: relative;
   display: grid;
@@ -339,6 +390,11 @@ h2 {
 
 .status-card strong {
   font-size: 1rem;
+}
+
+.status-card.grouped {
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
 }
 
 .status-dot {

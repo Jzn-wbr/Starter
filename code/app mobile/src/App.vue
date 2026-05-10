@@ -73,6 +73,13 @@ const selectedAudioLabel = computed(() => {
   if (audioSelection.value?.audio_source === 'fallback') return 'Son de secours local'
   return selectedTrack.value?.title ?? 'Aucune musique sélectionnée'
 })
+const alarmActivationLabel = computed(() => {
+  if (!stationStatus.value) return 'Inconnu'
+  const state = stationStatus.value.station_state
+  if (state === 'armed' || state === 'ringing' || state === 'validating_activity') return 'Active'
+  return 'Inactive'
+})
+const alarmActivationClass = computed(() => (alarmActivationLabel.value === 'Active' ? 'active' : 'inactive'))
 const hasProblem = computed(() => {
   return stationStatus.value?.problem_code !== 'none' || braceletStatus.value?.problem_code !== 'none'
 })
@@ -289,7 +296,7 @@ async function saveAlarm() {
 
     alarmPlan.value = planData as AlarmPlan
     audioSelection.value = audioData as AlarmAudioSelection
-    successMessage.value = 'Alarme enregistrée.'
+    successMessage.value = `Alarme enregistrée pour ${selectedSlot.value.shortLabel} (${selectedSlot.value.isoDate}).`
   } catch (error) {
     showError(error)
   } finally {
@@ -506,7 +513,19 @@ function showError(error: unknown) {
             <span class="soft-pill">{{ selectedSlot ? formatRelativeHours(selectedSlot.hoursFromNow) : 'Aucun créneau' }}</span>
           </div>
 
-          <div class="time-wheel" aria-label="Roue horaire des 20 prochaines heures">
+          <div class="alarm-highlight">
+            <div>
+              <small>Heure fixée</small>
+              <strong>{{ selectedSlot?.shortLabel }}</strong>
+              <span>{{ selectedSlot?.isoDate }}</span>
+            </div>
+            <div class="alarm-chip" :class="alarmActivationClass">
+              <Bell :size="15" />
+              <span>{{ alarmActivationLabel }}</span>
+            </div>
+          </div>
+
+          <div class="time-wheel" aria-label="Sélecteur horaire interactif des 20 prochaines heures">
             <button class="wheel-step" type="button" :disabled="selectedSlotIndex === 0" @click="selectOffset(-1)">
               −15 min
             </button>
@@ -527,7 +546,14 @@ function showError(error: unknown) {
             </button>
           </div>
 
-          <input v-model.number="selectedSlotIndex" class="slot-range" type="range" min="0" :max="slots.length - 1" />
+          <input
+            v-model.number="selectedSlotIndex"
+            class="slot-range"
+            type="range"
+            min="0"
+            :max="slots.length - 1"
+            aria-label="Choisir l'heure de réveil"
+          />
           <div class="range-labels">
             <span>Maintenant</span>
             <span>+20 h</span>
@@ -575,17 +601,18 @@ function showError(error: unknown) {
               <small v-if="braceletStale">Statut ancien</small>
             </button>
 
-            <button class="status-card" type="button" @click="detailsOpen = !detailsOpen">
+            <button class="status-card grouped" type="button" @click="detailsOpen = !detailsOpen">
               <BatteryCharging v-if="braceletStatus?.bracelet_state === 'charging'" :size="22" />
               <Battery v-else :size="22" />
-              <span>Batterie</span>
-              <strong>
+              <span>Énergie</span>
+              <strong>{{ braceletStatus?.bracelet_state === 'charging' ? 'En charge' : 'Batterie' }}</strong>
+              <small>
                 {{
                   braceletStatus?.bracelet_battery_percent === null || braceletStatus?.bracelet_battery_percent === undefined
-                    ? 'Inconnue'
+                    ? 'Niveau inconnu'
                     : `${braceletStatus.bracelet_battery_percent}%`
                 }}
-              </strong>
+              </small>
             </button>
 
             <button class="status-card" type="button" @click="detailsOpen = !detailsOpen">
