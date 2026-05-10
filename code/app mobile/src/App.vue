@@ -73,6 +73,19 @@ const selectedAudioLabel = computed(() => {
   if (audioSelection.value?.audio_source === 'fallback') return 'Son de secours local'
   return selectedTrack.value?.title ?? 'Aucune musique sélectionnée'
 })
+const configuredAlarmSummary = computed(() => {
+  if (!alarmPlan.value?.alarm_date || !alarmPlan.value?.alarm_time) return 'Aucune heure enregistrée'
+  const alarmDate = new Date(`${alarmPlan.value.alarm_date}T${alarmPlan.value.alarm_time}`)
+  if (Number.isNaN(alarmDate.getTime())) return `${alarmPlan.value.alarm_date} · ${alarmPlan.value.alarm_time}`
+  return alarmDate.toLocaleString('fr-FR', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+})
+const alarmIsActive = computed(() => Boolean(alarmPlan.value?.enabled && alarmPlan.value?.alarm_date && alarmPlan.value?.alarm_time))
 const hasProblem = computed(() => {
   return stationStatus.value?.problem_code !== 'none' || braceletStatus.value?.problem_code !== 'none'
 })
@@ -506,6 +519,16 @@ function showError(error: unknown) {
             <span class="soft-pill">{{ selectedSlot ? formatRelativeHours(selectedSlot.hoursFromNow) : 'Aucun créneau' }}</span>
           </div>
 
+          <div class="alarm-overview">
+            <div>
+              <span>Heure enregistrée</span>
+              <strong>{{ configuredAlarmSummary }}</strong>
+            </div>
+            <span class="alarm-state-pill" :class="{ inactive: !alarmIsActive }">
+              {{ alarmIsActive ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+
           <div class="time-wheel" aria-label="Roue horaire des 20 prochaines heures">
             <button class="wheel-step" type="button" :disabled="selectedSlotIndex === 0" @click="selectOffset(-1)">
               −15 min
@@ -574,8 +597,10 @@ function showError(error: unknown) {
               <strong>{{ braceletStatus ? braceletStateLabels[braceletStatus.bracelet_state] : 'Inconnu' }}</strong>
               <small v-if="braceletStale">Statut ancien</small>
             </button>
+          </div>
 
-            <button class="status-card" type="button" @click="detailsOpen = !detailsOpen">
+          <div class="status-grid split-grid">
+            <button class="status-card battery-card" type="button" @click="detailsOpen = !detailsOpen">
               <BatteryCharging v-if="braceletStatus?.bracelet_state === 'charging'" :size="22" />
               <Battery v-else :size="22" />
               <span>Batterie</span>
@@ -588,7 +613,7 @@ function showError(error: unknown) {
               </strong>
             </button>
 
-            <button class="status-card" type="button" @click="detailsOpen = !detailsOpen">
+            <button class="status-card diagnostic-card" type="button" @click="detailsOpen = !detailsOpen">
               <ShieldAlert v-if="hasProblem" :size="22" />
               <Activity v-else :size="22" />
               <span>Diagnostic</span>

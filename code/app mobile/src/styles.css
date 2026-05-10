@@ -172,6 +172,44 @@ h2 {
   margin: 10px 0 18px;
 }
 
+.alarm-overview {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #eef8f4;
+}
+
+.alarm-overview span {
+  color: #66756f;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.alarm-overview strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.95rem;
+}
+
+.alarm-state-pill {
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: #065f46;
+  background: #dcfce7;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.alarm-state-pill.inactive {
+  color: #9f1239;
+  background: #ffe4e6;
+}
+
 .wheel-face {
   position: relative;
   display: grid;
@@ -312,6 +350,10 @@ h2 {
   gap: 10px;
 }
 
+.split-grid {
+  margin-top: 10px;
+}
+
 .status-card {
   display: grid;
   gap: 6px;
@@ -339,6 +381,14 @@ h2 {
 
 .status-card strong {
   font-size: 1rem;
+}
+
+.battery-card {
+  background: #f3f9ff;
+}
+
+.diagnostic-card {
+  background: #f8f6ff;
 }
 
 .status-dot {
