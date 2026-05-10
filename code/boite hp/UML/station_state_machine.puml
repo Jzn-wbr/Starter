@@ -11,12 +11,15 @@ idle --> fault : time/config/audio fault
 
 armed --> idle : alarm disabled
 armed --> ringing : local alarm time reached\nbracelet ready
+armed --> idle : 15-minute activity window expired\nor revision already completed
 armed --> fault : no valid time/config\nbracelet missing/low/fault
 
-ringing --> validating_activity : bracelet packets present
+ringing --> validating_activity : bracelet movement present\nXSMT LOW, stream continues
+ringing --> stopped : 15-minute activity window ended
 ringing --> fault : audio fault or bracelet timeout
 
-validating_activity --> stopped : bracelet validated sustained activity
+validating_activity --> ringing : bracelet movement absent\nXSMT HIGH, same audio continues
+validating_activity --> stopped : 15-minute activity window ended
 validating_activity --> fault : bracelet/audio fault
 
 stopped --> idle : alarm cycle complete
@@ -27,11 +30,19 @@ fault --> armed : problem fixed\nvalid enabled alarm
 note right of ringing
 Supabase track playback failure does not stop alarm.
 The station switches to generated local fallback audio.
+Periodic config refresh does not leave ringing
+or validating_activity.
+Network status refreshes are deferred while
+streaming remote audio to avoid underruns.
 end note
 
 note bottom
 There is no normal stop or snooze transition.
-Only bracelet validation can stop an active alarm.
+Bracelet movement only mutes audio during the
+fixed 15-minute activity window by toggling XSMT.
+The stream or fallback audio keeps running until
+the station marks the alarm complete when that
+window ends.
 end note
 
 @enduml

@@ -7,8 +7,8 @@ export interface AlarmSlot {
   hoursFromNow: number
 }
 
-const WINDOW_HOURS = 20
-const SLOT_MINUTES = 15
+const WINDOW_HOURS = 12
+const SLOT_MINUTES = 5
 
 export function buildAlarmSlots(now = new Date()): AlarmSlot[] {
   const first = new Date(now)

@@ -65,6 +65,7 @@ erDiagram
     problem_code_v1 problem_code
     text problem_message
     integer active_alarm_revision
+    numeric station_battery_voltage
     timestamptz updated_at
   }
 
@@ -73,7 +74,7 @@ erDiagram
     bracelet_state_v1 bracelet_state
     problem_code_v1 problem_code
     text problem_message
-    integer bracelet_battery_percent
+    numeric bracelet_battery_voltage
     bigint bracelet_last_seen_ms
     timestamptz updated_at
   }

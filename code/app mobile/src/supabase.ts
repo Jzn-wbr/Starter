@@ -51,6 +51,7 @@ export interface StationStatus {
   problem_code: ProblemCode
   problem_message: string
   active_alarm_revision: number | null
+  station_battery_voltage: number | null
   updated_at: string
 }
 
@@ -59,7 +60,7 @@ export interface BraceletStatus {
   bracelet_state: BraceletState
   problem_code: ProblemCode
   problem_message: string
-  bracelet_battery_percent: number | null
+  bracelet_battery_voltage: number | null
   bracelet_last_seen_ms: number | null
   updated_at: string
 }

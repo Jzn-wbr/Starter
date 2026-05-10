@@ -10,12 +10,13 @@ rectangle "Wake-up PWA" {
   usecase "Browse music library" as BrowseMusic
   usecase "Select wake-up track" as SelectTrack
   usecase "Select local fallback sound" as SelectFallback
-  usecase "Configure tomorrow alarm" as ConfigureAlarm
+  usecase "Configure and activate alarm" as ConfigureAlarm
   usecase "View saved alarm time" as ViewSavedAlarm
   usecase "Enable or disable saved alarm" as ToggleAlarm
-  usecase "View station status" as ViewStationStatus
-  usecase "View bracelet status" as ViewBraceletStatus
-  usecase "View blocking problems" as ViewProblems
+  usecase "View station status summary" as ViewStationStatus
+  usecase "View bracelet status summary" as ViewBraceletStatus
+  usecase "Open station details" as ViewStationDetails
+  usecase "Open bracelet details" as ViewBraceletDetails
   usecase "Receive automatic updates" as ReceiveUpdates
 }
 
@@ -38,10 +39,10 @@ User --> ViewSavedAlarm
 User --> ToggleAlarm
 User --> ViewStationStatus
 User --> ViewBraceletStatus
-User --> ViewProblems
+User --> ViewStationDetails
+User --> ViewBraceletDetails
 ReceiveUpdates --> ViewStationStatus
 ReceiveUpdates --> ViewBraceletStatus
-ReceiveUpdates --> ViewProblems
 
 UploadMusic --> StoreAudio
 UploadMusic --> StoreMusicMetadata
@@ -54,8 +55,8 @@ ViewSavedAlarm --> StoreAlarmPlan
 ToggleAlarm --> StoreAlarmPlan
 ViewStationStatus --> ExposeStationStatus
 ViewBraceletStatus --> ExposeBraceletStatus
-ViewProblems --> ExposeStationStatus
-ViewProblems --> ExposeBraceletStatus
+ViewStationDetails --> ExposeStationStatus
+ViewBraceletDetails --> ExposeBraceletStatus
 ExposeStationStatus --> PublishRealtime
 ExposeBraceletStatus --> PublishRealtime
 StoreAlarmPlan --> PublishRealtime
@@ -66,8 +67,11 @@ ReceiveUpdates --> PublishRealtime
 note bottom of "Wake-up PWA"
   The PWA configures the system through Supabase.
   It does not trigger or stop the alarm directly.
-  The app only proposes alarm slots in the next 20 hours.
+  Saving an alarm writes enabled=true and proposes
+  alarm slots in the next 12 hours.
   Supabase realtime updates refresh changed blocks automatically.
+  Station and bracelet cards show state and battery percent calculated from voltage.
+  Opening a card shows error message, updated_at, and raw battery voltage.
   Status polling remains a visible-page fallback.
 end note
 

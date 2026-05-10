@@ -20,6 +20,7 @@ static const int PIN_LRCK = 32;
 static const int PIN_DIN = 33;
 static const int PIN_BCK = 25;
 static const int PIN_XSMT = 26;
+static const int PIN_BATTERY_ADC = 34;
 
 static const uint8_t PROTOCOL_VERSION = 1;
 static const uint32_t CONFIG_REFRESH_MS = 10000;
@@ -28,6 +29,10 @@ static const uint32_t CONTROL_SEND_MS = 5000;
 static const uint32_t WIFI_RETRY_MS = 15000;
 static const uint32_t ARMED_BRACELET_TIMEOUT_MS = 15000;
 static const uint32_t RINGING_BRACELET_TIMEOUT_MS = 5000;
+static const time_t ALARM_WINDOW_SECONDS = 15 * 60;
+static const float BATTERY_DIVIDER_RATIO = 2.0F;
+static const float BATTERY_EMPTY_V = 3.30F;
+static const float BATTERY_FULL_V = 4.20F;
 static const uint8_t BRACELET_BLOCKING_BATTERY_PERCENT = 20;
 static const uint8_t BRACELET_LOW_BATTERY_PERCENT = 30;
 static const i2s_port_t FALLBACK_I2S_PORT = I2S_NUM_0;
@@ -93,6 +98,7 @@ struct BraceletSnapshot
   bool sensorReady = false;
   bool motionPresent = false;
   bool charging = false;
+  float batteryVoltage = -1.0F;
   int batteryPercent = -1;
   uint32_t lastSeenMs = 0;
   uint32_t sequence = 0;
@@ -109,7 +115,7 @@ struct __attribute__((packed)) BraceletStatusPacket
   uint8_t braceletState;
   uint8_t activityScore;
   uint8_t validated;
-  uint8_t batteryPercent;
+  uint16_t batteryVoltageMv;
   uint8_t faultCode;
   uint8_t flags;
 };
@@ -137,14 +143,17 @@ static ProblemCode problemCode = ProblemCode::None;
 static String problemMessage = "";
 static bool remoteAudioActive = false;
 static bool fallbackAudioActive = false;
+static bool alarmAudioMuted = false;
 static bool espNowReady = false;
 static bool timeReady = false;
+static float stationBatteryVoltage = -1.0F;
 static uint32_t lastConfigRefreshMs = 0;
 static uint32_t lastStatusPublishMs = 0;
 static uint32_t lastControlSendMs = 0;
 static uint32_t lastWifiAttemptMs = 0;
 static uint32_t controlSequence = 0;
 static uint8_t stationMac[6] = {0};
+static int completedAlarmRevision = 0;
 
 static const char *stateName(StationState state)
 {
@@ -194,6 +203,77 @@ static const char *problemName(ProblemCode code)
   case ProblemCode::UnknownFault: return "unknown_fault";
   }
   return "unknown_fault";
+}
+
+static bool alarmIsActive()
+{
+  return stationState == StationState::Ringing || stationState == StationState::ValidatingActivity;
+}
+
+static bool alarmRevisionWasCompleted(const AlarmConfig &config)
+{
+  return config.revision >= 1 && config.revision == completedAlarmRevision;
+}
+
+static bool alarmIsStale(const AlarmConfig &config)
+{
+  if (!timeReady || !config.enabled || !config.alarmAt)
+  {
+    return false;
+  }
+
+  return time(nullptr) > config.alarmAt + ALARM_WINDOW_SECONDS;
+}
+
+static bool alarmShouldBeArmed(const AlarmConfig &config)
+{
+  return config.valid && config.enabled && !alarmRevisionWasCompleted(config) && !alarmIsStale(config);
+}
+
+static bool alarmCanStartNow(const AlarmConfig &config)
+{
+  if (!alarmShouldBeArmed(config) || !timeReady)
+  {
+    return false;
+  }
+
+  const time_t now = time(nullptr);
+  return now >= config.alarmAt && now <= config.alarmAt + ALARM_WINDOW_SECONDS;
+}
+
+static bool alarmWindowIsOpen(const AlarmConfig &config)
+{
+  return alarmCanStartNow(config);
+}
+
+static bool alarmWindowHasEnded(const AlarmConfig &config)
+{
+  return config.valid && config.enabled && timeReady && time(nullptr) > config.alarmAt + ALARM_WINDOW_SECONDS;
+}
+
+static void saveCompletedAlarmRevision(int revision)
+{
+  if (revision < 1 || completedAlarmRevision == revision)
+  {
+    return;
+  }
+
+  completedAlarmRevision = revision;
+  preferences.begin("station", false);
+  preferences.putInt("completedRev", completedAlarmRevision);
+  preferences.end();
+}
+
+static void loadCompletedAlarmRevision()
+{
+  preferences.begin("station", true);
+  completedAlarmRevision = preferences.getInt("completedRev", 0);
+  preferences.end();
+}
+
+static StationState inactiveStateForAlarm(const AlarmConfig &config)
+{
+  return alarmShouldBeArmed(config) ? StationState::Armed : StationState::Idle;
 }
 
 static void setStationState(StationState state, ProblemCode code = ProblemCode::None, const String &message = "")
@@ -492,22 +572,41 @@ static bool loadCachedAlarm(AlarmConfig &out)
   return true;
 }
 
+static int estimateBatteryPercent(float voltage)
+{
+  if (voltage <= 0.1F)
+  {
+    return -1;
+  }
+
+  const float ratio = (voltage - BATTERY_EMPTY_V) / (BATTERY_FULL_V - BATTERY_EMPTY_V);
+  return static_cast<int>(roundf(constrain(ratio, 0.0F, 1.0F) * 100.0F));
+}
+
+static float readStationBatteryVoltage()
+{
+  const uint32_t measuredMillivolts = analogReadMilliVolts(PIN_BATTERY_ADC);
+  return (static_cast<float>(measuredMillivolts) * BATTERY_DIVIDER_RATIO) / 1000.0F;
+}
+
 static void publishStationStatus()
 {
   const String activeRevision = alarmConfig.revision >= 1 ? String(alarmConfig.revision) : "null";
+  const String batteryVoltage = stationBatteryVoltage > 0.1F ? String(stationBatteryVoltage, 3) : "null";
   const String body = String("{\"id\":\"main\",\"station_state\":\"") + stateName(stationState) +
                       "\",\"problem_code\":\"" + problemName(problemCode) +
                       "\",\"problem_message\":\"" + escapeJson(problemMessage) +
-                      "\",\"active_alarm_revision\":" + activeRevision + "}";
+                      "\",\"active_alarm_revision\":" + activeRevision +
+                      ",\"station_battery_voltage\":" + batteryVoltage + "}";
   supabaseRequest("POST", "/rest/v1/station_status", body, nullptr);
 }
 
 static void publishBraceletStatus()
 {
-  String battery = "null";
-  if (bracelet.batteryPercent >= 0)
+  String batteryVoltage = "null";
+  if (bracelet.batteryVoltage > 0.1F)
   {
-    battery = String(bracelet.batteryPercent);
+    batteryVoltage = String(bracelet.batteryVoltage, 3);
   }
 
   String lastSeen = "null";
@@ -519,7 +618,7 @@ static void publishBraceletStatus()
   const String body = String("{\"id\":\"main\",\"bracelet_state\":\"") + braceletStateName(bracelet.state) +
                       "\",\"problem_code\":\"" + problemName(bracelet.problem) +
                       "\",\"problem_message\":\"" + escapeJson(problemName(bracelet.problem)) +
-                      "\",\"bracelet_battery_percent\":" + battery +
+                      "\",\"bracelet_battery_voltage\":" + batteryVoltage +
                       ",\"bracelet_last_seen_ms\":" + lastSeen + "}";
   supabaseRequest("POST", "/rest/v1/bracelet_status", body, nullptr);
 }
@@ -614,6 +713,7 @@ static void writeFallbackAudio()
 static bool startAlarmAudio()
 {
   digitalWrite(PIN_XSMT, HIGH);
+  alarmAudioMuted = false;
   audio.setVolume(map(alarmConfig.volumePercent, 0, 100, 0, 21));
 
   if (!alarmConfig.useFallback && alarmConfig.selectedTrackUrl.length() > 0)
@@ -638,6 +738,20 @@ static void stopAlarmAudio()
   audio.stopSong();
   remoteAudioActive = false;
   stopFallbackAudio();
+  digitalWrite(PIN_XSMT, LOW);
+  alarmAudioMuted = true;
+}
+
+static bool setAlarmAudioMuted(bool muted)
+{
+  if (alarmAudioMuted == muted)
+  {
+    return false;
+  }
+
+  digitalWrite(PIN_XSMT, muted ? LOW : HIGH);
+  alarmAudioMuted = muted;
+  return true;
 }
 
 static bool braceletIsReadyForAlarm()
@@ -676,7 +790,15 @@ static void refreshConfig()
   {
     alarmConfig = next;
     saveCachedAlarm(alarmConfig);
-    setStationState(alarmConfig.enabled ? StationState::Armed : StationState::Idle);
+    if (!alarmIsActive())
+    {
+      if (alarmIsStale(alarmConfig))
+      {
+        saveCompletedAlarmRevision(alarmConfig.revision);
+        Serial.println("Loaded alarm is stale; it will not start until the app saves a new revision.");
+      }
+      setStationState(inactiveStateForAlarm(alarmConfig));
+    }
     Serial.printf("Loaded alarm revision %d, enabled=%d\n", alarmConfig.revision, alarmConfig.enabled);
     publishStationStatus();
     return;
@@ -685,9 +807,24 @@ static void refreshConfig()
   if (loadCachedAlarm(next))
   {
     alarmConfig = next;
-    setStationState(alarmConfig.enabled ? StationState::Armed : StationState::Idle,
-                    ProblemCode::SupabaseUnavailable,
-                    "Using cached alarm because Supabase is unavailable");
+    if (!alarmIsActive())
+    {
+      if (alarmIsStale(alarmConfig))
+      {
+        saveCompletedAlarmRevision(alarmConfig.revision);
+        Serial.println("Cached alarm is stale; it will not start until the app saves a new revision.");
+      }
+      setStationState(inactiveStateForAlarm(alarmConfig),
+                      ProblemCode::SupabaseUnavailable,
+                      "Using cached alarm because Supabase is unavailable");
+    }
+    publishStationStatus();
+    return;
+  }
+
+  if (alarmIsActive())
+  {
+    setStationState(stationState, ProblemCode::SupabaseUnavailable, "Config refresh failed during active alarm; continuing alarm");
     publishStationStatus();
     return;
   }
@@ -749,7 +886,8 @@ static void onEspNowDataReceived(const uint8_t *mac, const uint8_t *data, int le
                        : BraceletState::Unknown;
   bracelet.activityScore = packet.activityScore;
   bracelet.validated = packet.validated != 0;
-  bracelet.batteryPercent = packet.batteryPercent == 255 ? -1 : packet.batteryPercent;
+  bracelet.batteryVoltage = packet.batteryVoltageMv == 0 ? -1.0F : static_cast<float>(packet.batteryVoltageMv) / 1000.0F;
+  bracelet.batteryPercent = estimateBatteryPercent(bracelet.batteryVoltage);
   bracelet.problem = packetProblemToCode(packet.faultCode);
   bracelet.charging = packet.flags & 0x01;
   bracelet.sensorReady = packet.flags & 0x02;
@@ -797,6 +935,16 @@ static void updateAlarmState()
   if (stationState == StationState::Ringing || stationState == StationState::ValidatingActivity)
   {
     const uint32_t age = bracelet.lastSeenMs ? millis() - bracelet.lastSeenMs : UINT32_MAX;
+
+    if (alarmWindowHasEnded(alarmConfig))
+    {
+      stopAlarmAudio();
+      saveCompletedAlarmRevision(alarmConfig.revision);
+      setStationState(StationState::Stopped, ProblemCode::None, "15 minute alarm activity window ended");
+      publishStationStatus();
+      return;
+    }
+
     if (REQUIRE_BRACELET_READY && age > RINGING_BRACELET_TIMEOUT_MS)
     {
       stopAlarmAudio();
@@ -804,17 +952,39 @@ static void updateAlarmState()
       return;
     }
 
-    if (bracelet.validated || bracelet.state == BraceletState::Validated)
+    if (bracelet.motionPresent || bracelet.validated || bracelet.state == BraceletState::Active || bracelet.state == BraceletState::Validated)
     {
-      stopAlarmAudio();
-      setStationState(StationState::Stopped, ProblemCode::None, "Bracelet validated sustained activity");
-      publishStationStatus();
+      const bool muteChanged = setAlarmAudioMuted(true);
+      if (stationState != StationState::ValidatingActivity)
+      {
+        setStationState(StationState::ValidatingActivity, ProblemCode::None, "Bracelet movement present during alarm window");
+        publishStationStatus();
+      }
+      else if (muteChanged)
+      {
+        publishStationStatus();
+      }
       return;
     }
 
-    if (age <= RINGING_BRACELET_TIMEOUT_MS && stationState == StationState::Ringing)
+    if (alarmWindowIsOpen(alarmConfig))
     {
-      setStationState(StationState::ValidatingActivity);
+      if (!remoteAudioActive && !fallbackAudioActive && startAlarmAudio())
+      {
+        setAlarmAudioMuted(false);
+        setStationState(StationState::Ringing, problemCode, problemMessage);
+        publishStationStatus();
+      }
+      else if (stationState != StationState::Ringing)
+      {
+        setAlarmAudioMuted(false);
+        setStationState(StationState::Ringing);
+        publishStationStatus();
+      }
+      else
+      {
+        setAlarmAudioMuted(false);
+      }
     }
     return;
   }
@@ -824,9 +994,23 @@ static void updateAlarmState()
     return;
   }
 
+  if (alarmRevisionWasCompleted(alarmConfig))
+  {
+    setStationState(StationState::Idle);
+    return;
+  }
+
   if (!timeReady)
   {
     setStationState(StationState::Fault, ProblemCode::TimeUnknown, "Time is not synchronized");
+    return;
+  }
+
+  if (alarmWindowHasEnded(alarmConfig))
+  {
+    saveCompletedAlarmRevision(alarmConfig.revision);
+    setStationState(StationState::Idle, ProblemCode::None, "15 minute alarm activity window already ended");
+    publishStationStatus();
     return;
   }
 
@@ -835,12 +1019,20 @@ static void updateAlarmState()
     return;
   }
 
-  const time_t now = time(nullptr);
-  if (now >= alarmConfig.alarmAt)
+  if (alarmWindowIsOpen(alarmConfig))
   {
     if (startAlarmAudio())
     {
-      setStationState(StationState::Ringing);
+      if (bracelet.motionPresent || bracelet.validated || bracelet.state == BraceletState::Active || bracelet.state == BraceletState::Validated)
+      {
+        setAlarmAudioMuted(true);
+        setStationState(StationState::ValidatingActivity, ProblemCode::None, "Bracelet movement present during alarm window");
+      }
+      else
+      {
+        setAlarmAudioMuted(false);
+        setStationState(StationState::Ringing);
+      }
       publishStationStatus();
     }
   }
@@ -853,6 +1045,8 @@ void setup()
 
   pinMode(PIN_XSMT, OUTPUT);
   digitalWrite(PIN_XSMT, HIGH);
+  pinMode(PIN_BATTERY_ADC, INPUT);
+  stationBatteryVoltage = readStationBatteryVoltage();
 
   WiFi.mode(WIFI_STA);
   WiFi.macAddress(stationMac);
@@ -863,10 +1057,11 @@ void setup()
 
   ensureWifi();
   setupEspNow();
+  loadCompletedAlarmRevision();
 
   if (loadCachedAlarm(alarmConfig))
   {
-    setStationState(alarmConfig.enabled ? StationState::Armed : StationState::Idle);
+    setStationState(inactiveStateForAlarm(alarmConfig));
   }
   else
   {
@@ -880,10 +1075,17 @@ void loop()
   syncTime();
 
   const uint32_t nowMs = millis();
+  stationBatteryVoltage = readStationBatteryVoltage();
+
   if (nowMs - lastConfigRefreshMs >= CONFIG_REFRESH_MS || lastConfigRefreshMs == 0)
   {
     lastConfigRefreshMs = nowMs;
-    if (WiFi.status() == WL_CONNECTED && timeReady)
+    if (alarmIsActive())
+    {
+      // Keep audio.loop() fed during the alarm; HTTPS refreshes can block long enough
+      // to underrun streamed audio on the ESP32.
+    }
+    else if (WiFi.status() == WL_CONNECTED && timeReady)
     {
       refreshConfig();
     }
@@ -906,7 +1108,7 @@ void loop()
     sendStationControl();
   }
 
-  if (nowMs - lastStatusPublishMs >= STATUS_PUBLISH_MS || lastStatusPublishMs == 0)
+  if (!remoteAudioActive && (nowMs - lastStatusPublishMs >= STATUS_PUBLISH_MS || lastStatusPublishMs == 0))
   {
     lastStatusPublishMs = nowMs;
     publishStationStatus();

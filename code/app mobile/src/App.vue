@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
-  Activity,
   AlertTriangle,
-  Battery,
   BatteryCharging,
   Bell,
   Check,
@@ -18,7 +16,6 @@ import {
   Play,
   Plus,
   Radio,
-  ShieldAlert,
   Smartphone,
   Trash2,
   Volume2,
@@ -38,6 +35,10 @@ import {
 import { buildAlarmSlots, formatRelativeHours, pickInitialSlot } from './timeWindow'
 
 type TabName = 'alarm' | 'music'
+type StatusTarget = 'station' | 'bracelet'
+
+const BATTERY_EMPTY_V = 3.3
+const BATTERY_FULL_V = 4.2
 
 const activeTab = ref<TabName>('alarm')
 const loading = ref(true)
@@ -46,7 +47,7 @@ const uploading = ref(false)
 const refreshing = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
-const detailsOpen = ref(false)
+const selectedStatusDetails = ref<StatusTarget | null>(null)
 const playingTrackId = ref<string | null>(null)
 const audioElement = ref<HTMLAudioElement | null>(null)
 
@@ -85,6 +86,8 @@ const hasProblem = computed(() => {
 const stationStale = computed(() => isStale(stationStatus.value?.updated_at))
 const braceletStale = computed(() => isStale(braceletStatus.value?.updated_at))
 const canUseSupabase = computed(() => SUPABASE_CONFIGURED)
+const stationBatteryPercent = computed(() => estimateBatteryPercent(stationStatus.value?.station_battery_voltage))
+const braceletBatteryPercent = computed(() => estimateBatteryPercent(braceletStatus.value?.bracelet_battery_voltage))
 
 const stationStateLabels: Record<string, string> = {
   idle: 'Au repos',
@@ -269,7 +272,7 @@ async function saveAlarm() {
       .from('alarm_plan')
       .upsert({
         id: 'main',
-        enabled: alarmPlan.value?.enabled ?? true,
+        enabled: true,
         alarm_date: selectedSlot.value.isoDate,
         alarm_time: selectedSlot.value.sqlTime,
         timezone: 'Europe/Zurich',
@@ -492,6 +495,37 @@ function showError(error: unknown) {
   const message = error instanceof Error ? error.message : 'Erreur inconnue.'
   errorMessage.value = message
 }
+
+function toggleStatusDetails(target: StatusTarget) {
+  selectedStatusDetails.value = selectedStatusDetails.value === target ? null : target
+}
+
+function formatBatteryPercent(value?: number | null) {
+  return value === null || value === undefined ? 'Inconnue' : `${value}%`
+}
+
+function formatBatteryVoltage(value?: number | null) {
+  return value === null || value === undefined ? 'Inconnue' : `${value.toFixed(2)} V`
+}
+
+function estimateBatteryPercent(voltage?: number | null) {
+  if (voltage === null || voltage === undefined || voltage <= 0.1) return null
+  const ratio = (voltage - BATTERY_EMPTY_V) / (BATTERY_FULL_V - BATTERY_EMPTY_V)
+  return Math.round(Math.min(1, Math.max(0, ratio)) * 100)
+}
+
+function formatUpdatedAt(value?: string) {
+  if (!value) return 'Inconnu'
+  return new Date(value).toLocaleString('fr-CH', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+}
 </script>
 
 <template>
@@ -548,9 +582,9 @@ function showError(error: unknown) {
             </button>
           </div>
 
-          <div class="time-wheel" aria-label="Roue horaire des 20 prochaines heures">
+          <div class="time-wheel" aria-label="Roue horaire des 12 prochaines heures">
             <button class="wheel-step" type="button" :disabled="selectedSlotIndex === 0" @click="selectOffset(-1)">
-              −15 min
+              -5 min
             </button>
             <div class="wheel-face">
               <span class="wheel-orbit orbit-one"></span>
@@ -565,14 +599,14 @@ function showError(error: unknown) {
               :disabled="selectedSlotIndex >= slots.length - 1"
               @click="selectOffset(1)"
             >
-              +15 min
+              +5 min
             </button>
           </div>
 
           <input v-model.number="selectedSlotIndex" class="slot-range" type="range" min="0" :max="slots.length - 1" />
           <div class="range-labels">
             <span>Maintenant</span>
-            <span>+20 h</span>
+            <span>+12 h</span>
           </div>
 
           <label class="volume-control">
@@ -603,53 +637,52 @@ function showError(error: unknown) {
           </div>
 
           <div class="status-grid">
-            <button class="status-card" type="button" @click="detailsOpen = !detailsOpen">
+            <button
+              class="status-card device-status-card"
+              :class="{ selected: selectedStatusDetails === 'station' }"
+              type="button"
+              @click="toggleStatusDetails('station')"
+            >
               <Radio :size="22" />
               <span>Station</span>
               <strong>{{ stationStatus ? stationStateLabels[stationStatus.station_state] : 'Inconnue' }}</strong>
+              <small>État</small>
+              <strong class="battery-value">{{ formatBatteryPercent(stationBatteryPercent) }}</strong>
+              <small>Batterie</small>
               <small v-if="stationStale">Statut ancien</small>
             </button>
 
-            <button class="status-card" type="button" @click="detailsOpen = !detailsOpen">
-              <Watch :size="22" />
+            <button
+              class="status-card device-status-card"
+              :class="{ selected: selectedStatusDetails === 'bracelet' }"
+              type="button"
+              @click="toggleStatusDetails('bracelet')"
+            >
+              <BatteryCharging v-if="braceletStatus?.bracelet_state === 'charging'" :size="22" />
+              <Watch v-else :size="22" />
               <span>Bracelet</span>
               <strong>{{ braceletStatus ? braceletStateLabels[braceletStatus.bracelet_state] : 'Inconnu' }}</strong>
+              <small>État</small>
+              <strong class="battery-value">{{ formatBatteryPercent(braceletBatteryPercent) }}</strong>
+              <small>Batterie</small>
               <small v-if="braceletStale">Statut ancien</small>
-            </button>
-
-            <button class="status-card status-card-wide" type="button" @click="detailsOpen = !detailsOpen">
-              <BatteryCharging v-if="braceletStatus?.bracelet_state === 'charging'" :size="22" />
-              <Battery v-else :size="22" />
-              <span>Batterie</span>
-              <strong>
-                {{
-                  braceletStatus?.bracelet_battery_percent === null || braceletStatus?.bracelet_battery_percent === undefined
-                    ? 'Inconnue'
-                    : `${braceletStatus.bracelet_battery_percent}%`
-                }}
-              </strong>
-            </button>
-
-            <button class="status-card status-card-wide" type="button" @click="detailsOpen = !detailsOpen">
-              <ShieldAlert v-if="hasProblem" :size="22" />
-              <Activity v-else :size="22" />
-              <span>Diagnostic</span>
-              <strong>{{ hasProblem ? 'À vérifier' : 'Normal' }}</strong>
             </button>
           </div>
 
-          <div v-if="detailsOpen" class="details-panel">
-            <div>
+          <div v-if="selectedStatusDetails" class="details-panel">
+            <div v-if="selectedStatusDetails === 'station'">
               <span>Station</span>
               <strong>{{ stationStatus ? problemLabels[stationStatus.problem_code] : 'Aucune donnée' }}</strong>
-              <small>{{ stationStatus?.problem_message || 'Pas de message' }}</small>
-              <small>Revision active: {{ stationStatus?.active_alarm_revision ?? 'n/a' }}</small>
+              <small>Message d'erreur: {{ stationStatus?.problem_message || 'Pas de message' }}</small>
+              <small>Last update at: {{ formatUpdatedAt(stationStatus?.updated_at) }}</small>
+              <small>Tension batterie: {{ formatBatteryVoltage(stationStatus?.station_battery_voltage) }}</small>
             </div>
-            <div>
+            <div v-if="selectedStatusDetails === 'bracelet'">
               <span>Bracelet</span>
               <strong>{{ braceletStatus ? problemLabels[braceletStatus.problem_code] : 'Aucune donnée' }}</strong>
-              <small>{{ braceletStatus?.problem_message || 'Pas de message' }}</small>
-              <small>Dernier paquet: {{ braceletStatus?.bracelet_last_seen_ms ?? 'n/a' }} ms</small>
+              <small>Message d'erreur: {{ braceletStatus?.problem_message || 'Pas de message' }}</small>
+              <small>Last update at: {{ formatUpdatedAt(braceletStatus?.updated_at) }}</small>
+              <small>Tension batterie: {{ formatBatteryVoltage(braceletStatus?.bracelet_battery_voltage) }}</small>
             </div>
           </div>
         </article>

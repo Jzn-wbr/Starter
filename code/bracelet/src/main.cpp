@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <Wire.h>
 #include <esp_now.h>
+#include <esp_wifi.h>
 #include "SparkFun_BMI270_Arduino_Library.h"
 
 namespace
@@ -19,16 +20,18 @@ namespace
     constexpr uint32_t SENSOR_RETRY_PERIOD_MS = 2000;
     constexpr uint32_t BATTERY_SAMPLE_PERIOD_MS = 1000;
     constexpr uint32_t TELEMETRY_LOG_PERIOD_MS = 5000;
+    constexpr uint32_t CHANNEL_HOP_PERIOD_MS = 300;
+    constexpr uint32_t STATION_CONTROL_LOCK_MS = 15000;
 
     constexpr uint32_t SEND_PERIOD_READY_MS = 5000;
     constexpr uint32_t SEND_PERIOD_ARMED_MS = 2000;
     constexpr uint32_t SEND_PERIOD_ACTIVE_MS = 200;
     constexpr uint32_t SEND_PERIOD_FAULT_MS = 2000;
 
-    constexpr uint32_t VALIDATION_REQUIRED_MS = 15UL * 60UL * 1000UL;
+    constexpr uint32_t MOVEMENT_CONFIRM_MS = 700;
     constexpr uint32_t PAUSE_TOLERANCE_MS = 5000;
-    constexpr float ACTIVE_ACCEL_DELTA_G = 0.162F;
-    constexpr float ACTIVE_GYRO_DPS = 71.7F;
+    constexpr float ACTIVE_ACCEL_DELTA_G = 0.18F;
+    constexpr float ACTIVE_GYRO_DPS = 80.0F;
     constexpr float BATTERY_DIVIDER_RATIO = 2.0F;
     constexpr float BATTERY_EMPTY_V = 3.30F;
     constexpr float BATTERY_FULL_V = 4.20F;
@@ -40,6 +43,8 @@ namespace
     constexpr uint8_t SENDER_STATION = 1;
     constexpr uint8_t SENDER_BRACELET = 2;
     constexpr uint8_t BATTERY_UNKNOWN = 255;
+    constexpr uint8_t ESP_NOW_MIN_CHANNEL = 1;
+    constexpr uint8_t ESP_NOW_MAX_CHANNEL = 13;
 
     constexpr uint8_t FLAG_CHARGING = 1 << 0;
     constexpr uint8_t FLAG_SENSOR_READY = 1 << 1;
@@ -59,13 +64,13 @@ namespace
 
     enum class StationState : uint8_t
     {
-        Unknown = 0,
-        Idle = 1,
-        Armed = 2,
-        Ringing = 3,
-        ValidatingActivity = 4,
-        Stopped = 5,
-        Fault = 6,
+        Idle = 0,
+        Armed = 1,
+        Ringing = 2,
+        ValidatingActivity = 3,
+        Stopped = 4,
+        Fault = 5,
+        Unknown = 255,
     };
 
     enum class ProblemCode : uint8_t
@@ -101,7 +106,7 @@ namespace
         uint8_t braceletState;
         uint8_t activityScore;
         uint8_t validated;
-        uint8_t batteryPercent;
+        uint16_t batteryVoltageMv;
         uint8_t faultCode;
         uint8_t flags;
     };
@@ -128,11 +133,11 @@ namespace
     struct ActivityTracker
     {
         uint32_t activeMs = 0;
+        uint32_t candidateActiveMs = 0;
         uint32_t pauseMs = 0;
         uint32_t lastUpdateMs = 0;
         float scoreEma = 0.0F;
         bool motionPresent = false;
-        bool validated = false;
     };
 
     BMI270 imu;
@@ -146,13 +151,17 @@ namespace
     uint32_t lastBatterySampleMs = 0;
     uint32_t lastSendMs = 0;
     uint32_t lastLogMs = 0;
+    uint32_t lastChannelHopMs = 0;
+    uint32_t lastStationControlMs = 0;
 
     bool sensorReady = false;
     bool espNowReady = false;
+    bool forceStatusSend = false;
     float batteryVoltage = 0.0F;
     uint8_t batteryPercent = BATTERY_UNKNOWN;
     StationState stationState = StationState::Unknown;
     bool stationRequiresActivity = false;
+    uint8_t espNowChannel = ESP_NOW_MIN_CHANNEL;
 
     bool beginBmi270()
     {
@@ -240,27 +249,28 @@ namespace
         const uint8_t instantScore = calculateInstantScore(reading);
 
         activity.scoreEma = (activity.scoreEma * 0.85F) + (static_cast<float>(instantScore) * 0.15F);
-        activity.motionPresent = moving;
 
         if (moving)
         {
-            activity.activeMs += dt;
+            activity.candidateActiveMs += dt;
             activity.pauseMs = 0;
+            if (activity.candidateActiveMs >= MOVEMENT_CONFIRM_MS)
+            {
+                activity.activeMs += dt;
+                activity.motionPresent = true;
+            }
         }
-        else if (activity.pauseMs + dt <= PAUSE_TOLERANCE_MS)
+        else if (activity.motionPresent && activity.pauseMs + dt <= PAUSE_TOLERANCE_MS)
         {
             activity.pauseMs += dt;
+            activity.motionPresent = true;
         }
         else
         {
             activity.activeMs = 0;
+            activity.candidateActiveMs = 0;
             activity.pauseMs = 0;
-            activity.validated = false;
-        }
-
-        if (activity.activeMs >= VALIDATION_REQUIRED_MS)
-        {
-            activity.validated = true;
+            activity.motionPresent = false;
         }
     }
 
@@ -312,10 +322,6 @@ namespace
         {
             return BraceletState::LowBattery;
         }
-        if (activity.validated)
-        {
-            return BraceletState::Validated;
-        }
         if (activity.motionPresent)
         {
             return BraceletState::Active;
@@ -360,6 +366,41 @@ namespace
         header.uptimeMs = millis();
     }
 
+    void setEspNowChannel(uint8_t channel)
+    {
+        if (channel < ESP_NOW_MIN_CHANNEL || channel > ESP_NOW_MAX_CHANNEL || channel == espNowChannel)
+        {
+            return;
+        }
+
+        espNowChannel = channel;
+        esp_wifi_set_channel(espNowChannel, WIFI_SECOND_CHAN_NONE);
+    }
+
+    void updateEspNowChannel()
+    {
+        if (!espNowReady)
+        {
+            return;
+        }
+
+        const uint32_t now = millis();
+        if (lastStationControlMs > 0 && now - lastStationControlMs < STATION_CONTROL_LOCK_MS)
+        {
+            return;
+        }
+
+        if (now - lastChannelHopMs < CHANNEL_HOP_PERIOD_MS)
+        {
+            return;
+        }
+
+        lastChannelHopMs = now;
+        const uint8_t nextChannel = espNowChannel >= ESP_NOW_MAX_CHANNEL ? ESP_NOW_MIN_CHANNEL : espNowChannel + 1;
+        setEspNowChannel(nextChannel);
+        forceStatusSend = true;
+    }
+
     uint32_t currentSendPeriod()
     {
         const BraceletState state = currentBraceletState();
@@ -386,19 +427,21 @@ namespace
         }
 
         const uint32_t now = millis();
-        if (!force && now - lastSendMs < currentSendPeriod())
+        const bool shouldForce = force || forceStatusSend;
+        if (!shouldForce && now - lastSendMs < currentSendPeriod())
         {
             return;
         }
 
         lastSendMs = now;
+        forceStatusSend = false;
 
         BraceletStatusPacket packet = {};
         fillHeader(packet.header, MESSAGE_BRACELET_STATUS);
         packet.braceletState = static_cast<uint8_t>(currentBraceletState());
         packet.activityScore = static_cast<uint8_t>(roundf(constrain(activity.scoreEma, 0.0F, 100.0F)));
-        packet.validated = activity.validated ? 1 : 0;
-        packet.batteryPercent = batteryPercent;
+        packet.validated = activity.motionPresent ? 1 : 0;
+        packet.batteryVoltageMv = batteryVoltage > 0.1F ? static_cast<uint16_t>(roundf(batteryVoltage * 1000.0F)) : 0;
         packet.faultCode = static_cast<uint8_t>(currentFaultCode());
         packet.flags = currentFlags();
 
@@ -428,6 +471,7 @@ namespace
 
         stationState = static_cast<StationState>(packet.stationState);
         stationRequiresActivity = packet.activityRequired != 0;
+        lastStationControlMs = millis();
         sendBraceletStatus(true);
     }
 
@@ -458,6 +502,7 @@ namespace
         WiFi.mode(WIFI_STA);
         WiFi.disconnect();
         WiFi.macAddress(deviceId);
+        esp_wifi_set_channel(espNowChannel, WIFI_SECOND_CHAN_NONE);
 
         Serial.print("bracelet_mac:");
         Serial.println(WiFi.macAddress());
@@ -486,12 +531,6 @@ namespace
         return true;
     }
 
-    void updateVibrationMotor()
-    {
-        const bool pulse = stationRequiresActivity && !activity.validated && ((millis() / 500) % 2 == 0);
-        digitalWrite(Pin::VIBRATION_MOTOR, pulse ? HIGH : LOW);
-    }
-
     void logTelemetry()
     {
         const uint32_t now = millis();
@@ -507,8 +546,8 @@ namespace
         Serial.print(static_cast<uint8_t>(roundf(constrain(activity.scoreEma, 0.0F, 100.0F))));
         Serial.print(",active_ms:");
         Serial.print(activity.activeMs);
-        Serial.print(",validated:");
-        Serial.print(activity.validated ? "true" : "false");
+        Serial.print(",motion_present:");
+        Serial.print(activity.motionPresent ? "true" : "false");
         Serial.print(",battery_percent:");
         Serial.print(batteryPercent);
         Serial.print(",battery_v:");
@@ -540,7 +579,7 @@ void loop()
 {
     updateBattery();
     updateMotion();
-    updateVibrationMotor();
+    updateEspNowChannel();
     sendBraceletStatus();
     logTelemetry();
 }

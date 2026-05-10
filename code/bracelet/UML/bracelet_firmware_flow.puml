@@ -2,32 +2,40 @@
 title Bracelet Firmware Flow
 
 start
-:Configure vibration motor output on IO0;
+:Hold vibration motor output LOW on IO0 for testing;
 :Configure battery ADC input on IO1;
 :Start I2C on SDA IO3 and SCL IO2;
 :Initialize BMI270 on address 0x68 or 0x69;
-:Estimate battery percent from divided LiPo voltage;
+:Measure divided LiPo voltage and derive battery percent locally;
 :Start WiFi station mode without AP;
 :Initialize ESP-NOW broadcast telemetry peer;
+:Set ESP-NOW channel to 1;
 :Send initial bracelet_status packet;
 
 repeat
   :Sample battery once per second;
+  if (station_control heard in last 15 seconds?) then (yes)
+    :Keep current ESP-NOW channel;
+  else (no)
+    :Hop to next ESP-NOW channel every 300 ms;
+    :Force bracelet_status on the new channel;
+  endif
   if (BMI270 ready?) then (yes)
     :Read accelerometer and gyroscope at 50 Hz;
     :Compute movement intensity score;
     if (movement above threshold?) then (yes)
-      :Add elapsed time to sustained activity;
+      :Accumulate candidate movement time;
       :Clear tolerated pause timer;
-    else (no)
-      if (pause <= 5 seconds?) then (yes)
-        :Keep current sustained activity total;
-      else (no)
-        :Reset sustained activity validation;
+      if (candidate movement >= 0.7 seconds?) then (yes)
+        :Set motion_present=true;
       endif
-    endif
-    if (sustained activity >= 15 minutes?) then (yes)
-      :Set validated=true;
+    else (no)
+      if (motion_present and pause <= 5 seconds?) then (yes)
+        :Keep motion_present=true;
+      else (no)
+        :Reset candidate movement time;
+        :Set motion_present=false;
+      endif
     endif
   else (no)
     :Retry BMI270 initialization every 2 seconds;
@@ -35,6 +43,7 @@ repeat
 
   if (station_control received?) then (yes)
     :Store station state and activity_required flag;
+    :Lock current ESP-NOW channel temporarily;
     :Send bracelet_status immediately;
   endif
 
@@ -42,16 +51,13 @@ repeat
     :Report state=fault and fault_code=sensor_fault;
   elseif (battery < 30 percent?) then (yes)
     :Report state=low_battery and fault_code=bracelet_low_battery;
-  elseif (validated?) then (yes)
-    :Report state=validated and validated=true;
   elseif (motion present?) then (yes)
-    :Report state=active;
+    :Report state=active and validated=true\nfor v1 movement compatibility;
   else (no)
     :Report state=ready;
   endif
 
-  :Send bracelet_status by ESP-NOW at rate based on station/alarm state;
-  :Pulse vibration motor only while station requests activity and validation is not done;
+  :Send bracelet_status with battery voltage by ESP-NOW\nat rate based on station/alarm state;
 repeat while (device powered)
 
 @enduml

@@ -8,8 +8,8 @@ This folder contains the bedside speaker station firmware. The station is the ce
 - It synchronizes time.
 - It fetches alarm configuration from Supabase.
 - It plays the selected wake-up music.
-- It receives bracelet activity validation over ESP-NOW.
-- It decides when the alarm can stop.
+- It receives bracelet movement telemetry over ESP-NOW.
+- It decides when alarm audio should play and when the alarm window is complete.
 
 The PWA is not the alarm authority. The bracelet does not decide final alarm state.
 
@@ -39,8 +39,8 @@ The station should:
 - Stream the selected Supabase music file at alarm time.
 - Use a small local fallback alarm sound if Supabase music is unreachable at wake-up time.
 - Connect to the dedicated bracelet over ESP-NOW.
-- Track bracelet activity validation.
-- Continue the alarm until valid sustained bracelet activity is received.
+- Track bracelet movement during the fixed 15-minute activity window after the configured alarm time.
+- Play alarm audio during that window only while bracelet movement is absent, then stop once the window ends.
 - Report WiFi, Supabase, audio, bracelet, and battery/fault states through logs and app-visible status when available.
 - Cache the last valid alarm config locally when implementing Supabase config loading.
 
@@ -50,7 +50,7 @@ No normal stop or snooze feature should be added unless the user explicitly requ
 
 Target v1 data flow:
 
-`PWA -> Supabase -> station -> bracelet validation -> station stops alarm`
+`PWA -> Supabase -> station -> bracelet movement -> station controls alarm window`
 
 Do not move alarm authority into the PWA or bracelet without explicit approval.
 

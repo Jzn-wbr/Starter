@@ -123,6 +123,7 @@ create table if not exists station_status (
   active_alarm_revision integer check (
     active_alarm_revision is null or active_alarm_revision >= 1
   ),
+  station_battery_voltage numeric(5,3),
   updated_at timestamptz not null default now(),
   constraint station_status_single_row check (id = 'main')
 );
@@ -132,16 +133,40 @@ create table if not exists bracelet_status (
   bracelet_state bracelet_state_v1 not null default 'unknown',
   problem_code problem_code_v1 not null default 'none',
   problem_message text not null default '',
-  bracelet_battery_percent integer check (
-    bracelet_battery_percent is null
-    or bracelet_battery_percent between 0 and 100
-  ),
+  bracelet_battery_voltage numeric(5,3),
   bracelet_last_seen_ms bigint check (
     bracelet_last_seen_ms is null or bracelet_last_seen_ms >= 0
   ),
   updated_at timestamptz not null default now(),
   constraint bracelet_status_single_row check (id = 'main')
 );
+
+alter table station_status
+  add column if not exists station_battery_voltage numeric(5,3);
+
+alter table station_status
+  drop constraint if exists station_status_battery_voltage_range;
+
+alter table station_status
+  add constraint station_status_battery_voltage_range check (
+    station_battery_voltage is null
+    or station_battery_voltage between 0 and 6
+  );
+
+alter table bracelet_status
+  add column if not exists bracelet_battery_voltage numeric(5,3);
+
+alter table bracelet_status
+  drop column if exists bracelet_battery_percent;
+
+alter table bracelet_status
+  drop constraint if exists bracelet_status_battery_voltage_range;
+
+alter table bracelet_status
+  add constraint bracelet_status_battery_voltage_range check (
+    bracelet_battery_voltage is null
+    or bracelet_battery_voltage between 0 and 6
+  );
 
 drop trigger if exists alarm_plan_set_updated_at on alarm_plan;
 create trigger alarm_plan_set_updated_at

@@ -78,6 +78,7 @@ Single station-published status row read by the app.
 - `problem_code`: one of the problem codes below, or `none`.
 - `problem_message`: short human-readable diagnostic text.
 - `active_alarm_revision`: latest `alarm_plan.revision` loaded by the station.
+- `station_battery_voltage`: station battery terminal voltage in volts, or `null` if unknown.
 - `updated_at`: SQL `timestamptz`, updated automatically by the database on row update.
 
 The app reads this status. The app must not infer alarm authority from it.
@@ -90,7 +91,7 @@ Single station-published row for the latest bracelet state as seen by the statio
 - `bracelet_state`: latest bracelet state as seen by the station, or `unknown`.
 - `problem_code`: one of the problem codes below, or `none`.
 - `problem_message`: short human-readable diagnostic text.
-- `bracelet_battery_percent`: integer `0..100`, or `null` if unknown.
+- `bracelet_battery_voltage`: bracelet battery terminal voltage in volts, or `null` if unknown.
 - `bracelet_last_seen_ms`: station uptime timestamp for the last bracelet packet, or `null`.
 - `updated_at`: SQL `timestamptz`, updated automatically by the database on row update.
 
@@ -122,7 +123,7 @@ The station should expose one clear state at a time:
 - `armed`: next alarm is configured and valid.
 - `ringing`: alarm audio is active.
 - `validating_activity`: alarm is active and bracelet activity is being evaluated.
-- `stopped`: alarm stopped after valid bracelet activity.
+- `stopped`: alarm window ended after bracelet activity monitoring.
 - `fault`: alarm cannot run correctly because of a blocking issue.
 
 The bracelet should expose:
@@ -130,7 +131,7 @@ The bracelet should expose:
 - `charging`: bracelet is on the station contacts or charging input.
 - `ready`: enough battery and sensor link is usable.
 - `active`: activity is currently detected.
-- `validated`: sustained activity requirement has been met.
+- `validated`: bracelet currently reports movement sufficient for the station to treat the user as active during the alarm window.
 - `low_battery`: battery may be insufficient for reliable wake-up validation.
 - `fault`: sensor, power, or firmware state prevents reliable validation.
 
@@ -145,15 +146,17 @@ Allowed station transitions for v1:
 - `armed -> idle`: app disables the next alarm.
 - `armed -> ringing`: alarm time is reached and prerequisites are valid.
 - `armed -> fault`: a blocking problem appears before alarm time.
-- `ringing -> validating_activity`: bracelet packets are present and activity evaluation is active.
+- `ringing -> validating_activity`: bracelet movement is present during the alarm window, so alarm audio is muted while monitoring continues.
 - `ringing -> fault`: a blocking technical fault prevents normal validation or audio output.
-- `validating_activity -> stopped`: sustained bracelet activity is validated.
+- `ringing -> stopped`: the 15-minute alarm activity window has ended.
+- `validating_activity -> ringing`: movement stops before the 15-minute window has ended.
+- `validating_activity -> stopped`: the 15-minute alarm activity window has ended.
 - `validating_activity -> fault`: bracelet link, bracelet sensor, or station audio becomes invalid.
 - `stopped -> idle`: alarm cycle is complete.
 - `fault -> idle`: user fixes the issue and station reloads a valid disabled/no-alarm state.
 - `fault -> armed`: user fixes the issue and station reloads a valid enabled alarm.
 
-Do not add a transition from `ringing` or `validating_activity` to `stopped` unless it is caused by bracelet validation.
+Do not add a normal stop or snooze transition from `ringing` or `validating_activity`. The v1 alarm stops only when the fixed 15-minute activity window ends; bracelet movement only mutes alarm audio during that window.
 
 ## Failure Policy
 
@@ -186,7 +189,11 @@ Use these v1 defaults unless physical testing proves they are wrong:
 - Station should publish `bracelet_low_battery` before bedtime if seen.
 - Station should enter `fault` before alarm start if bracelet battery is below the blocking threshold.
 
-If battery percentage cannot be measured yet, report `null` and document the limitation. Do not fake battery precision.
+If battery voltage cannot be measured yet, report `null` and document the limitation. Do not fake battery precision.
+
+Supabase stores raw battery voltage for station and bracelet status. User-facing battery percentages are derived by the PWA from the voltage, so changing the display curve does not require a database migration.
+
+Station battery voltage is measured on station GPIO34 through a 2:1 voltage divider: `Vbat = 2 * Vadc`.
 
 ## ESP-NOW Contract
 
@@ -213,7 +220,7 @@ Fields:
 - `bracelet_state`: enum from System States.
 - `activity_score`: uint8 `0..100`.
 - `validated`: boolean.
-- `battery_percent`: uint8 `0..100`, or `255` if unknown.
+- `battery_voltage_mv`: uint16 bracelet battery terminal voltage in millivolts, or `0` if unknown.
 - `fault_code`: problem code enum, or `none`.
 - `flags`: bitmask for `charging`, `sensor_ready`, `motion_present`.
 
@@ -240,19 +247,20 @@ Fields:
 
 Station control messages are optional in v1. The bracelet must still be able to send status without first receiving station control.
 
-The station remains authoritative. Bracelet validation is input to the station, not a direct stop command.
+The station remains authoritative. Bracelet movement/validation is input to the station, not a direct stop command.
 
-## Activity Validation Contract
+## Activity Window Contract
 
 Use these v1 defaults unless physical testing proves they are wrong:
 
-- Validation requires `15min` of sustained activity.
-- Evaluate activity in a rolling window.
-- Isolated shake spikes must not validate alone.
-- Short pauses under `5s` are tolerated.
+- The station opens a fixed `15min` activity window at the configured alarm time.
+- During that window, the station plays alarm audio when the bracelet is missing or reports no movement.
+- During that window, bracelet movement mutes alarm output with station `XSMT` on GPIO26, but does not stop the stream or complete the alarm revision.
+- If movement stops before the window ends, the station unmutes `XSMT` and continues the already-started alarm audio.
+- When the 15-minute window ends, the station stops alarm audio and marks the alarm revision complete, regardless of movement history.
 - Activity score should represent recent movement intensity on a `0..100` scale.
 
-The bracelet computes activity and sends `validated=true` only after the sustained requirement is met. The station still decides whether this stops the current alarm.
+The bracelet computes current movement and may send `validated=true` as a compact "movement present" signal for v1 compatibility. The station decides whether audio should play and when the alarm revision is complete.
 
 ## Fallback Sound Contract
 

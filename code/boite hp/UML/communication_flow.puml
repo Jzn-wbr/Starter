@@ -14,31 +14,45 @@ alt selected track
   Station -> Supabase : GET music_tracks selected_track_id\npublic_url from stored track row
 end
 Station -> Station : cache valid combined config
-Station -> Supabase : publish station_status
+alt alarm revision already completed or 15-minute window expired
+  Station -> Supabase : publish station_state=idle
+else pending alarm
+  Station -> Supabase : publish station_state=armed
+end
+Station -> Supabase : publish station_status\nwith station_battery_voltage from GPIO34
 note right
   active_alarm_revision is null until a valid
   alarm_plan revision has been loaded.
 end note
 
 loop while armed/ringing
-  Bracelet -> Station : bracelet_status packet
-  Station -> Supabase : publish bracelet_status
+  Bracelet -> Station : bracelet_status packet\nwith battery_voltage_mv
+  Station -> Supabase : publish bracelet_status\nwith bracelet_battery_voltage
   Station -> Bracelet : station_control packet
 end
 
 loop every 10 seconds while connected
   Station -> Supabase : refresh alarm_plan and alarm_audio_selection
-  Station -> Supabase : publish current station_status
+  Station -> Supabase : publish current station_status\nwith station_battery_voltage from GPIO34
+end
+note right
+  During active remote audio streaming, periodic
+  Supabase refresh/status writes are deferred so
+  audio.loop() can keep the stream buffered.
+end note
+
+alt alarm time within 15-minute activity window
+  Station -> Audio : start selected stream or local fallback
+  alt bracelet movement present
+    Station -> Audio : mute output with XSMT GPIO26\nkeep stream/fallback running
+    Station -> Supabase : station_state=validating_activity
+  else bracelet movement absent
+    Station -> Audio : unmute XSMT GPIO26\ncontinue running audio
+  end
 end
 
-alt alarm time and stored track playable
-  Station -> Audio : play selected music_tracks public_url
-else track unavailable or fallback selected
-  Station -> Audio : generated local fallback tone
-end
-
-Bracelet -> Station : validated=true
-Station -> Audio : stop alarm
+Station -> Station : 15-minute activity window ends
+Station -> Audio : stop stream/fallback alarm audio
 Station -> Supabase : station_state=stopped
 
 @enduml
