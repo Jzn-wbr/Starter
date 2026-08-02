@@ -62,6 +62,11 @@ export interface BraceletStatus {
   problem_message: string
   bracelet_battery_voltage: number | null
   bracelet_last_seen_ms: number | null
+  bracelet_energy: number
+  bracelet_energy_valid_ms: number
+  bracelet_energy_threshold: number
+  energy_mute_remaining_ms: number
+  bracelet_vibrating: boolean
   updated_at: string
 }
 

@@ -16,6 +16,16 @@
 #include "secrets.example.h"
 #endif
 
+// Existing local secrets.h files predate the fallback network fields. Keep
+// them compatible until the optional values are added there.
+#ifndef WIFI_FALLBACK_SSID
+#define WIFI_FALLBACK_SSID ""
+#endif
+
+#ifndef WIFI_FALLBACK_PASSWORD
+#define WIFI_FALLBACK_PASSWORD ""
+#endif
+
 static const int PIN_LRCK = 32;
 static const int PIN_DIN = 33;
 static const int PIN_BCK = 25;
@@ -25,10 +35,24 @@ static const int PIN_BATTERY_ADC = 34;
 static const uint8_t PROTOCOL_VERSION = 1;
 static const uint32_t CONFIG_REFRESH_MS = 10000;
 static const uint32_t STATUS_PUBLISH_MS = 10000;
-static const uint32_t CONTROL_SEND_MS = 5000;
+static const uint32_t CONTROL_SEND_MS = 700;
 static const uint32_t WIFI_RETRY_MS = 15000;
+static const uint32_t WIFI_CONNECT_TIMEOUT_MS = 10000;
+static const uint32_t SUPABASE_FAILURE_BACKOFF_MS = 30000;
+// The ESP32 without PSRAM must keep enough contiguous internal heap for TLS.
+// This remains comfortably above the audio library's MP3/AAC minimum buffer.
+static const int AUDIO_BUFFER_RAM_BYTES = 24 * 1024;
+static const int AUDIO_BUFFER_PSRAM_BYTES = 192 * 1024;
 static const uint32_t ARMED_BRACELET_TIMEOUT_MS = 15000;
-static const uint32_t RINGING_BRACELET_TIMEOUT_MS = 5000;
+static const uint32_t RINGING_BRACELET_TIMEOUT_MS = 3000;
+static const uint32_t ENERGY_MUTE_MS = 10000;
+static const uint32_t ENERGY_PRE_UNMUTE_WARNING_MS = 3000;
+static const uint32_t ENERGY_UNMUTE_GRACE_MS = 500;
+static const uint32_t ENERGY_THRESHOLD = 1333333;
+static const uint16_t MIN_ENERGY_VALID_MS = 80;
+static const uint32_t REMOTE_AUDIO_PRIME_MS = 700;
+static const uint32_t REMOTE_AUDIO_LOOP_BUDGET_MS = 20;
+static const uint32_t REMOTE_AUDIO_AFTER_CONTROL_MS = 4;
 static const time_t ALARM_WINDOW_SECONDS = 15 * 60;
 static const float BATTERY_DIVIDER_RATIO = 2.0F;
 static const float BATTERY_EMPTY_V = 3.30F;
@@ -96,8 +120,10 @@ struct BraceletSnapshot
   uint8_t activityScore = 0;
   bool validated = false;
   bool sensorReady = false;
-  bool motionPresent = false;
+  bool vibrating = false;
   bool charging = false;
+  uint32_t energy = 0;
+  uint16_t energyValidMs = 0;
   float batteryVoltage = -1.0F;
   int batteryPercent = -1;
   uint32_t lastSeenMs = 0;
@@ -118,6 +144,8 @@ struct __attribute__((packed)) BraceletStatusPacket
   uint16_t batteryVoltageMv;
   uint8_t faultCode;
   uint8_t flags;
+  uint32_t energy;
+  uint16_t energyValidMs;
 };
 
 struct __attribute__((packed)) StationControlPacket
@@ -130,7 +158,7 @@ struct __attribute__((packed)) StationControlPacket
   uint32_t uptimeMs;
   uint8_t stationState;
   int32_t alarmRevision;
-  uint8_t activityRequired;
+  uint8_t vibrationRequest;
   uint8_t thresholdProfile;
 };
 
@@ -150,10 +178,18 @@ static float stationBatteryVoltage = -1.0F;
 static uint32_t lastConfigRefreshMs = 0;
 static uint32_t lastStatusPublishMs = 0;
 static uint32_t lastControlSendMs = 0;
-static uint32_t lastWifiAttemptMs = 0;
+static uint32_t lastWifiCycleFailureMs = 0;
+static uint32_t wifiConnectStartedMs = 0;
+static uint8_t wifiNetworkIndex = 0;
+static bool wifiConnectionInProgress = false;
+static uint32_t lastSupabaseFailureMs = 0;
+static uint32_t energyMuteUntilMs = 0;
+static uint32_t unmuteWarningUntilMs = 0;
 static uint32_t controlSequence = 0;
 static uint8_t stationMac[6] = {0};
 static int completedAlarmRevision = 0;
+static bool pendingStationStatusPublish = false;
+static bool pendingBraceletStatusPublish = false;
 
 static const char *stateName(StationState state)
 {
@@ -251,6 +287,56 @@ static bool alarmWindowHasEnded(const AlarmConfig &config)
   return config.valid && config.enabled && timeReady && time(nullptr) > config.alarmAt + ALARM_WINDOW_SECONDS;
 }
 
+static bool energyKeepsAudioMuted()
+{
+  if (energyMuteUntilMs == 0)
+  {
+    return false;
+  }
+
+  const uint32_t now = millis();
+  if (now < energyMuteUntilMs)
+  {
+    unmuteWarningUntilMs = 0;
+    return true;
+  }
+
+  if (unmuteWarningUntilMs == 0)
+  {
+    unmuteWarningUntilMs = now + ENERGY_PRE_UNMUTE_WARNING_MS;
+    return true;
+  }
+
+  return now < unmuteWarningUntilMs || now - unmuteWarningUntilMs < ENERGY_UNMUTE_GRACE_MS;
+}
+
+static uint32_t energyMuteRemainingMs()
+{
+  const uint32_t now = millis();
+  if (energyMuteUntilMs == 0)
+  {
+    return 0;
+  }
+
+  const uint32_t mutedUntilMs = max(energyMuteUntilMs, unmuteWarningUntilMs);
+  return now < mutedUntilMs ? mutedUntilMs - now : 0;
+}
+
+static void extendEnergyMute(uint32_t now)
+{
+  const uint32_t nextMuteUntilMs = now + ENERGY_MUTE_MS;
+  if (energyMuteUntilMs == 0 || now >= energyMuteUntilMs || nextMuteUntilMs - energyMuteUntilMs < ENERGY_MUTE_MS)
+  {
+    energyMuteUntilMs = nextMuteUntilMs;
+    unmuteWarningUntilMs = 0;
+  }
+}
+
+static bool unmuteWarningIsActive()
+{
+  return unmuteWarningUntilMs != 0 && millis() < unmuteWarningUntilMs;
+}
+
 static void saveCompletedAlarmRevision(int revision)
 {
   if (revision < 1 || completedAlarmRevision == revision)
@@ -308,19 +394,64 @@ static bool ensureWifi()
 {
   if (WiFi.status() == WL_CONNECTED)
   {
+    wifiConnectionInProgress = false;
     return true;
   }
 
   const uint32_t now = millis();
-  if (now - lastWifiAttemptMs < WIFI_RETRY_MS)
+  const char *ssids[] = {WIFI_SSID, WIFI_FALLBACK_SSID};
+  const char *passwords[] = {WIFI_PASSWORD, WIFI_FALLBACK_PASSWORD};
+  const uint8_t networkCount = sizeof(ssids) / sizeof(ssids[0]);
+
+  if (wifiConnectionInProgress && now - wifiConnectStartedMs < WIFI_CONNECT_TIMEOUT_MS)
   {
     return false;
   }
 
-  lastWifiAttemptMs = now;
-  Serial.printf("Connecting WiFi SSID '%s'\n", WIFI_SSID);
+  const bool fallbackConfigured = strlen(WIFI_FALLBACK_SSID) > 0;
+  if (wifiConnectionInProgress)
+  {
+    Serial.printf("WiFi connection to '%s' timed out\n", ssids[wifiNetworkIndex]);
+    WiFi.disconnect();
+    wifiNetworkIndex = (wifiNetworkIndex + 1) % networkCount;
+    wifiConnectionInProgress = false;
+
+    // Wait only after both configured networks have been tried. This makes
+    // the fallback attempt start immediately after the primary times out.
+    if (!fallbackConfigured || wifiNetworkIndex == 0)
+    {
+      lastWifiCycleFailureMs = now;
+      return false;
+    }
+  }
+
+  if (lastWifiCycleFailureMs != 0 && now - lastWifiCycleFailureMs < WIFI_RETRY_MS)
+  {
+    return false;
+  }
+
+  // An empty fallback entry is intentionally skipped, so the example
+  // configuration keeps working until a second network is configured.
+  for (uint8_t checked = 0; checked < networkCount; ++checked)
+  {
+    if (strlen(ssids[wifiNetworkIndex]) > 0)
+    {
+      break;
+    }
+    wifiNetworkIndex = (wifiNetworkIndex + 1) % networkCount;
+  }
+
+  if (strlen(ssids[wifiNetworkIndex]) == 0)
+  {
+    Serial.println("No WiFi SSID configured");
+    return false;
+  }
+
+  wifiConnectStartedMs = now;
+  wifiConnectionInProgress = true;
+  Serial.printf("Connecting WiFi SSID '%s'\n", ssids[wifiNetworkIndex]);
   WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.begin(ssids[wifiNetworkIndex], passwords[wifiNetworkIndex]);
   return false;
 }
 
@@ -389,13 +520,30 @@ static bool supabaseRequest(const String &method, const String &path, const Stri
     return false;
   }
 
+  const uint32_t now = millis();
+  if (lastSupabaseFailureMs != 0 && now - lastSupabaseFailureMs < SUPABASE_FAILURE_BACKOFF_MS)
+  {
+    return false;
+  }
+
   HTTPClient http;
   const String url = String(SUPABASE_URL) + path;
+  Serial.printf("Supabase %s %s (free heap: %u, largest block: %u)\n",
+                method.c_str(),
+                path.c_str(),
+                ESP.getFreeHeap(),
+                ESP.getMaxAllocHeap());
   http.begin(url);
+  http.setReuse(false);
+  http.setTimeout(10000);
   http.addHeader("apikey", SUPABASE_ANON_KEY);
   http.addHeader("Authorization", String("Bearer ") + SUPABASE_ANON_KEY);
   http.addHeader("Content-Type", "application/json");
-  http.addHeader("Prefer", "return=representation,resolution=merge-duplicates");
+  // Status responses are discarded. Asking Supabase for no representation
+  // avoids allocating response Strings after every 10-second publication.
+  http.addHeader("Prefer", method == "POST"
+                               ? "return=minimal,resolution=merge-duplicates"
+                               : "return=representation");
 
   int status = 0;
   if (method == "GET")
@@ -412,12 +560,23 @@ static bool supabaseRequest(const String &method, const String &path, const Stri
     return false;
   }
 
-  const String payload = http.getString();
+  String payload;
+  if (status < 200 || status >= 300 || jsonOut)
+  {
+    payload = http.getString();
+  }
   http.end();
 
   if (status < 200 || status >= 300)
   {
-    Serial.printf("Supabase %s %s failed: HTTP %d, %s\n", method.c_str(), path.c_str(), status, payload.c_str());
+    Serial.printf("Supabase %s %s failed: HTTP %d, %s (free heap: %u, largest block: %u)\n",
+                  method.c_str(),
+                  path.c_str(),
+                  status,
+                  payload.c_str(),
+                  ESP.getFreeHeap(),
+                  ESP.getMaxAllocHeap());
+    lastSupabaseFailureMs = millis();
     return false;
   }
 
@@ -427,10 +586,12 @@ static bool supabaseRequest(const String &method, const String &path, const Stri
     if (err)
     {
       Serial.printf("Supabase JSON parse failed: %s\n", err.c_str());
+      lastSupabaseFailureMs = millis();
       return false;
     }
   }
 
+  lastSupabaseFailureMs = 0;
   return true;
 }
 
@@ -539,7 +700,7 @@ static void saveCachedAlarm(const AlarmConfig &config)
   preferences.putInt("volume", config.volumePercent);
   preferences.putLong64("alarmAt", static_cast<int64_t>(config.alarmAt));
   preferences.putString("timezone", config.timezone);
-  preferences.putString("selectedTrackUrl", config.selectedTrackUrl);
+  preferences.putString("trackUrl", config.selectedTrackUrl);
   preferences.end();
 }
 
@@ -554,7 +715,7 @@ static bool loadCachedAlarm(AlarmConfig &out)
   cached.volumePercent = preferences.getInt("volume", 80);
   cached.alarmAt = static_cast<time_t>(preferences.getLong64("alarmAt", 0));
   cached.timezone = preferences.getString("timezone", "Europe/Zurich");
-  cached.selectedTrackUrl = preferences.getString("selectedTrackUrl", "");
+  cached.selectedTrackUrl = preferences.getString("trackUrl", "");
   preferences.end();
 
   if (!cached.valid || !cached.alarmAt)
@@ -619,8 +780,59 @@ static void publishBraceletStatus()
                       "\",\"problem_code\":\"" + problemName(bracelet.problem) +
                       "\",\"problem_message\":\"" + escapeJson(problemName(bracelet.problem)) +
                       "\",\"bracelet_battery_voltage\":" + batteryVoltage +
-                      ",\"bracelet_last_seen_ms\":" + lastSeen + "}";
+                      ",\"bracelet_last_seen_ms\":" + lastSeen +
+                      ",\"bracelet_energy\":" + String(bracelet.energy) +
+                      ",\"bracelet_energy_valid_ms\":" + String(bracelet.energyValidMs) +
+                      ",\"bracelet_energy_threshold\":" + String(ENERGY_THRESHOLD) +
+                      ",\"energy_mute_remaining_ms\":" + String(energyMuteRemainingMs()) +
+                      ",\"bracelet_vibrating\":" + String(bracelet.vibrating ? "true" : "false") + "}";
   supabaseRequest("POST", "/rest/v1/bracelet_status", body, nullptr);
+}
+
+static void requestStationStatusPublish()
+{
+  if (remoteAudioActive)
+  {
+    pendingStationStatusPublish = true;
+    return;
+  }
+
+  publishStationStatus();
+  lastStatusPublishMs = millis();
+}
+
+static void requestBraceletStatusPublish()
+{
+  if (remoteAudioActive)
+  {
+    pendingBraceletStatusPublish = true;
+    return;
+  }
+
+  publishBraceletStatus();
+  lastStatusPublishMs = millis();
+}
+
+static void flushDeferredStatusPublishes()
+{
+  if (remoteAudioActive || (!pendingStationStatusPublish && !pendingBraceletStatusPublish))
+  {
+    return;
+  }
+
+  if (pendingStationStatusPublish)
+  {
+    pendingStationStatusPublish = false;
+    publishStationStatus();
+  }
+
+  if (pendingBraceletStatusPublish)
+  {
+    pendingBraceletStatusPublish = false;
+    publishBraceletStatus();
+  }
+
+  lastStatusPublishMs = millis();
 }
 
 static void stopFallbackAudio()
@@ -712,6 +924,8 @@ static void writeFallbackAudio()
 
 static bool startAlarmAudio()
 {
+  energyMuteUntilMs = 0;
+  unmuteWarningUntilMs = 0;
   digitalWrite(PIN_XSMT, HIGH);
   alarmAudioMuted = false;
   audio.setVolume(map(alarmConfig.volumePercent, 0, 100, 0, 21));
@@ -723,6 +937,12 @@ static bool startAlarmAudio()
     {
       remoteAudioActive = true;
       fallbackAudioActive = false;
+      const uint32_t primeStartMs = millis();
+      while (millis() - primeStartMs < REMOTE_AUDIO_PRIME_MS && audio.isRunning())
+      {
+        audio.loop();
+        delay(1);
+      }
       return true;
     }
 
@@ -738,8 +958,32 @@ static void stopAlarmAudio()
   audio.stopSong();
   remoteAudioActive = false;
   stopFallbackAudio();
+  energyMuteUntilMs = 0;
+  unmuteWarningUntilMs = 0;
   digitalWrite(PIN_XSMT, LOW);
   alarmAudioMuted = true;
+}
+
+static void serviceRemoteAudio(uint32_t budgetMs)
+{
+  if (!remoteAudioActive)
+  {
+    return;
+  }
+
+  const uint32_t startedMs = millis();
+  do
+  {
+    audio.loop();
+    delay(0);
+  } while (remoteAudioActive && audio.isRunning() && millis() - startedMs < budgetMs);
+
+  if (!audio.isRunning() && (stationState == StationState::Ringing || stationState == StationState::ValidatingActivity))
+  {
+    Serial.println("Selected Supabase track stopped unexpectedly; switching to fallback.");
+    setStationState(stationState, ProblemCode::MusicStreamFailed, "Supabase music stopped, using local fallback");
+    startFallbackAudio();
+  }
 }
 
 static bool setAlarmAudioMuted(bool muted)
@@ -849,11 +1093,12 @@ static void sendStationControl()
   packet.uptimeMs = millis();
   packet.stationState = static_cast<uint8_t>(stationState);
   packet.alarmRevision = alarmConfig.revision;
-  packet.activityRequired = (stationState == StationState::Ringing || stationState == StationState::ValidatingActivity) ? 1 : 0;
+  packet.vibrationRequest = (alarmIsActive() && (!alarmAudioMuted || unmuteWarningIsActive())) ? 1 : 0;
   packet.thresholdProfile = 0;
 
   const uint8_t broadcastMac[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
   esp_now_send(broadcastMac, reinterpret_cast<uint8_t *>(&packet), sizeof(packet));
+  serviceRemoteAudio(REMOTE_AUDIO_AFTER_CONTROL_MS);
 }
 
 static ProblemCode packetProblemToCode(uint8_t value)
@@ -891,9 +1136,15 @@ static void onEspNowDataReceived(const uint8_t *mac, const uint8_t *data, int le
   bracelet.problem = packetProblemToCode(packet.faultCode);
   bracelet.charging = packet.flags & 0x01;
   bracelet.sensorReady = packet.flags & 0x02;
-  bracelet.motionPresent = packet.flags & 0x04;
+  bracelet.vibrating = packet.flags & 0x04;
+  bracelet.energy = packet.energy;
+  bracelet.energyValidMs = packet.energyValidMs;
   bracelet.sequence = packet.sequence;
   bracelet.lastSeenMs = millis();
+  if (bracelet.energyValidMs >= MIN_ENERGY_VALID_MS && bracelet.energy >= ENERGY_THRESHOLD)
+  {
+    extendEnergyMute(millis());
+  }
 }
 
 static void setupEspNow()
@@ -919,16 +1170,7 @@ static void setupEspNow()
 
 static void updateAlarmState()
 {
-  if (remoteAudioActive)
-  {
-    audio.loop();
-    if (!audio.isRunning() && (stationState == StationState::Ringing || stationState == StationState::ValidatingActivity))
-    {
-      Serial.println("Selected Supabase track stopped unexpectedly; switching to fallback.");
-      setStationState(stationState, ProblemCode::MusicStreamFailed, "Supabase music stopped, using local fallback");
-      startFallbackAudio();
-    }
-  }
+  serviceRemoteAudio(REMOTE_AUDIO_LOOP_BUDGET_MS);
 
   writeFallbackAudio();
 
@@ -941,28 +1183,51 @@ static void updateAlarmState()
       stopAlarmAudio();
       saveCompletedAlarmRevision(alarmConfig.revision);
       setStationState(StationState::Stopped, ProblemCode::None, "15 minute alarm activity window ended");
-      publishStationStatus();
+      requestStationStatusPublish();
       return;
     }
 
-    if (REQUIRE_BRACELET_READY && age > RINGING_BRACELET_TIMEOUT_MS)
+    const bool braceletMissing = REQUIRE_BRACELET_READY && age > RINGING_BRACELET_TIMEOUT_MS;
+    if (braceletMissing)
     {
-      stopAlarmAudio();
-      setStationState(StationState::Fault, ProblemCode::BraceletMissing, "Bracelet lost during alarm validation");
-      return;
+      // Missing movement telemetry is not evidence that the user is active.
+      // Keep the alarm playing and recover automatically when packets return.
+      energyMuteUntilMs = 0;
+      unmuteWarningUntilMs = 0;
+      const bool muteChanged = setAlarmAudioMuted(false);
+      const bool problemChanged = stationState != StationState::Ringing ||
+                                  problemCode != ProblemCode::BraceletMissing;
+      setStationState(StationState::Ringing,
+                      ProblemCode::BraceletMissing,
+                      "Bracelet missing; alarm continues without movement muting");
+      if (problemChanged || muteChanged)
+      {
+        sendStationControl();
+        lastControlSendMs = millis();
+        requestStationStatusPublish();
+      }
+    }
+    else if (problemCode == ProblemCode::BraceletMissing)
+    {
+      setStationState(StationState::Ringing, ProblemCode::None, "Bracelet communication restored");
+      sendStationControl();
+      lastControlSendMs = millis();
+      requestStationStatusPublish();
     }
 
-    if (bracelet.motionPresent || bracelet.validated || bracelet.state == BraceletState::Active || bracelet.state == BraceletState::Validated)
+    if (!braceletMissing && energyKeepsAudioMuted())
     {
       const bool muteChanged = setAlarmAudioMuted(true);
       if (stationState != StationState::ValidatingActivity)
       {
-        setStationState(StationState::ValidatingActivity, ProblemCode::None, "Bracelet movement present during alarm window");
-        publishStationStatus();
+        setStationState(StationState::ValidatingActivity, ProblemCode::None, "Alarm audio muted by bracelet energy threshold");
+        sendStationControl();
+        lastControlSendMs = millis();
+        requestStationStatusPublish();
       }
       else if (muteChanged)
       {
-        publishStationStatus();
+        requestStationStatusPublish();
       }
       return;
     }
@@ -973,13 +1238,17 @@ static void updateAlarmState()
       {
         setAlarmAudioMuted(false);
         setStationState(StationState::Ringing, problemCode, problemMessage);
-        publishStationStatus();
+        sendStationControl();
+        lastControlSendMs = millis();
+        requestStationStatusPublish();
       }
       else if (stationState != StationState::Ringing)
       {
         setAlarmAudioMuted(false);
         setStationState(StationState::Ringing);
-        publishStationStatus();
+        sendStationControl();
+        lastControlSendMs = millis();
+        requestStationStatusPublish();
       }
       else
       {
@@ -1010,7 +1279,7 @@ static void updateAlarmState()
   {
     saveCompletedAlarmRevision(alarmConfig.revision);
     setStationState(StationState::Idle, ProblemCode::None, "15 minute alarm activity window already ended");
-    publishStationStatus();
+    requestStationStatusPublish();
     return;
   }
 
@@ -1023,17 +1292,19 @@ static void updateAlarmState()
   {
     if (startAlarmAudio())
     {
-      if (bracelet.motionPresent || bracelet.validated || bracelet.state == BraceletState::Active || bracelet.state == BraceletState::Validated)
+      if (energyKeepsAudioMuted())
       {
         setAlarmAudioMuted(true);
-        setStationState(StationState::ValidatingActivity, ProblemCode::None, "Bracelet movement present during alarm window");
+        setStationState(StationState::ValidatingActivity, ProblemCode::None, "Alarm audio muted by bracelet energy threshold");
       }
       else
       {
         setAlarmAudioMuted(false);
         setStationState(StationState::Ringing);
       }
-      publishStationStatus();
+      sendStationControl();
+      lastControlSendMs = millis();
+      requestStationStatusPublish();
     }
   }
 }
@@ -1052,7 +1323,9 @@ void setup()
   WiFi.macAddress(stationMac);
   esp_wifi_set_ps(WIFI_PS_NONE);
 
+  audio.setBufsize(AUDIO_BUFFER_RAM_BYTES, AUDIO_BUFFER_PSRAM_BYTES);
   audio.setPinout(PIN_BCK, PIN_LRCK, PIN_DIN);
+  audio.setConnectionTimeout(500, 2700);
   audio.setVolume(17);
 
   ensureWifi();
@@ -1071,11 +1344,17 @@ void setup()
 
 void loop()
 {
-  ensureWifi();
-  syncTime();
+  if (!remoteAudioActive)
+  {
+    ensureWifi();
+    syncTime();
+  }
 
   const uint32_t nowMs = millis();
-  stationBatteryVoltage = readStationBatteryVoltage();
+  if (!remoteAudioActive)
+  {
+    stationBatteryVoltage = readStationBatteryVoltage();
+  }
 
   if (nowMs - lastConfigRefreshMs >= CONFIG_REFRESH_MS || lastConfigRefreshMs == 0)
   {
@@ -1101,6 +1380,7 @@ void loop()
   }
 
   updateAlarmState();
+  flushDeferredStatusPublishes();
 
   if (nowMs - lastControlSendMs >= CONTROL_SEND_MS)
   {
@@ -1115,5 +1395,13 @@ void loop()
     publishBraceletStatus();
   }
 
-  delay(2);
+  if (remoteAudioActive)
+  {
+    serviceRemoteAudio(REMOTE_AUDIO_LOOP_BUDGET_MS);
+    delay(0);
+  }
+  else
+  {
+    delay(2);
+  }
 }

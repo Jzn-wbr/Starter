@@ -2,12 +2,21 @@
 title Bedside station v1 communication flow
 
 participant "Station firmware" as Station
+participant "Configured Wi-Fi networks" as Wifi
 database "Supabase REST" as Supabase
 participant "NTP" as Ntp
 participant "ESP-NOW bracelet" as Bracelet
 participant "Audio output\nPCM5102A/PAM8403" as Audio
 
-Station -> Ntp : synchronize local time
+Station -> Wifi : try primary Wi-Fi network
+alt primary unavailable after 10 seconds
+  Station -> Wifi : try fallback Wi-Fi network
+  note right
+    If neither network connects, retry the cycle
+    after the Wi-Fi retry delay.
+  end note
+end
+Station -> Ntp : synchronize local time once Wi-Fi is connected
 Station -> Supabase : GET alarm_plan main
 Station -> Supabase : GET alarm_audio_selection main
 alt selected track
@@ -26,28 +35,48 @@ note right
 end note
 
 loop while armed/ringing
-  Bracelet -> Station : bracelet_status packet\nwith battery_voltage_mv
-  Station -> Supabase : publish bracelet_status\nwith bracelet_battery_voltage
-  Station -> Bracelet : station_control packet
+  Bracelet -> Station : bracelet_status packet\nwith energy and battery_voltage_mv
+  Station -> Bracelet : station_control packet\nwith vibration_request at 700 ms cadence\nand immediately on audio state changes
 end
 
 loop every 10 seconds while connected
   Station -> Supabase : refresh alarm_plan and alarm_audio_selection
-  Station -> Supabase : publish current station_status\nwith station_battery_voltage from GPIO34
+  Station -> Supabase : publish station_status with minimal response\nwith station_battery_voltage from GPIO34
+  Station -> Supabase : publish bracelet_status with minimal response\nwithout high-rate energy graph streaming
 end
 note right
   During active remote audio streaming, periodic
-  Supabase refresh/status writes are deferred so
-  audio.loop() can keep the stream buffered.
+  Supabase refresh/status writes and transition
+  status writes are deferred so
+  audio.loop() can keep the enlarged stream
+  buffer filled.
 end note
 
 alt alarm time within 15-minute activity window
   Station -> Audio : start selected stream or local fallback
-  alt bracelet movement present
-    Station -> Audio : mute output with XSMT GPIO26\nkeep stream/fallback running
+  Station -> Audio : prime remote stream briefly\nbefore requesting bracelet vibration
+  alt bracelet energy reaches threshold 1,333,333
+    Station -> Audio : mute output with XSMT GPIO26 for 10 s\nkeep stream/fallback running
     Station -> Supabase : station_state=validating_activity
-  else bracelet movement absent
+  else bracelet energy below threshold
     Station -> Audio : unmute XSMT GPIO26\ncontinue running audio
+  end
+  alt mute timer active
+    Station -> Audio : stay muted
+  else mute timer expires
+    Station -> Bracelet : request vibration for 3 s\nwhile XSMT remains muted
+    alt bracelet energy reaches threshold during warning
+      Station -> Audio : keep muted for a new 10 s window
+    else no new threshold event
+    Station -> Audio : resume alarm output
+    Station -> Supabase : station_state=ringing
+    end
+  end
+  alt bracelet packets missing for more than 3 seconds
+    Station -> Audio : unmute and continue alarm audio
+    Station -> Supabase : publish problem_code=bracelet_missing
+  else bracelet communication restored
+    Station -> Station : resume movement detection automatically
   end
 end
 

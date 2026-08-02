@@ -56,7 +56,16 @@ pnpm-debug.log*
 **/*.step
 **/*.stp
 
-# Generated UML renders; commit the .puml source files instead
-**/UML/*.png
+# Generated UML renders
+# PNG exports are kept next to their .puml sources for the manual report.
 **/UML/*.svg
 **/UML/*.pdf
+
+# LaTeX documentation build outputs
+doc/*.aux
+doc/*.fls
+doc/*.fdb_latexmk
+doc/*.out
+doc/*.toc
+doc/*.synctex.gz
+doc/tools/

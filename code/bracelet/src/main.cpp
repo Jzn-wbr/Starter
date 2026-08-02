@@ -23,15 +23,16 @@ namespace
     constexpr uint32_t CHANNEL_HOP_PERIOD_MS = 300;
     constexpr uint32_t STATION_CONTROL_LOCK_MS = 15000;
 
-    constexpr uint32_t SEND_PERIOD_READY_MS = 5000;
-    constexpr uint32_t SEND_PERIOD_ARMED_MS = 2000;
-    constexpr uint32_t SEND_PERIOD_ACTIVE_MS = 200;
-    constexpr uint32_t SEND_PERIOD_FAULT_MS = 2000;
-
-    constexpr uint32_t MOVEMENT_CONFIRM_MS = 700;
-    constexpr uint32_t PAUSE_TOLERANCE_MS = 5000;
-    constexpr float ACTIVE_ACCEL_DELTA_G = 0.18F;
-    constexpr float ACTIVE_GYRO_DPS = 80.0F;
+    constexpr uint32_t SEND_PERIOD_MS = 200;
+    constexpr uint32_t CONTROL_REPLY_DELAY_MS = 100;
+    constexpr uint32_t ENERGY_WINDOW_MS = 200;
+    constexpr uint32_t VIBRATION_PERIOD_MS = 4000;
+    constexpr uint32_t VIBRATION_ON_MS = 500;
+    constexpr uint32_t VIBRATION_SETTLE_MS = 450;
+    constexpr float ACCEL_NOISE_FLOOR_G = 0.003F;
+    constexpr float GYRO_NOISE_FLOOR_DPS = 0.6F;
+    constexpr float ACCEL_ENERGY_SCALE = 60000.0F;
+    constexpr float GYRO_ENERGY_SCALE = 8.0F;
     constexpr float BATTERY_DIVIDER_RATIO = 2.0F;
     constexpr float BATTERY_EMPTY_V = 3.30F;
     constexpr float BATTERY_FULL_V = 4.20F;
@@ -48,7 +49,7 @@ namespace
 
     constexpr uint8_t FLAG_CHARGING = 1 << 0;
     constexpr uint8_t FLAG_SENSOR_READY = 1 << 1;
-    constexpr uint8_t FLAG_MOTION_PRESENT = 1 << 2;
+    constexpr uint8_t FLAG_VIBRATION_ACTIVE = 1 << 2;
 
     const uint8_t BROADCAST_PEER[ESP_NOW_ETH_ALEN] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
@@ -109,6 +110,8 @@ namespace
         uint16_t batteryVoltageMv;
         uint8_t faultCode;
         uint8_t flags;
+        uint32_t energy;
+        uint16_t energyValidMs;
     };
 
     struct __attribute__((packed)) StationControlPacket
@@ -116,7 +119,7 @@ namespace
         PacketHeader header;
         uint8_t stationState;
         uint32_t alarmRevision;
-        uint8_t activityRequired;
+        uint8_t vibrationRequest;
         uint8_t thresholdProfile;
     };
 
@@ -130,19 +133,20 @@ namespace
         float gyroZ = 0.0F;
     };
 
-    struct ActivityTracker
+    struct EnergyTracker
     {
-        uint32_t activeMs = 0;
-        uint32_t candidateActiveMs = 0;
-        uint32_t pauseMs = 0;
-        uint32_t lastUpdateMs = 0;
-        float scoreEma = 0.0F;
-        bool motionPresent = false;
+        uint32_t windowStartMs = 0;
+        uint32_t lastSampleMs = 0;
+        uint32_t energy = 0;
+        uint16_t validMs = 0;
+        uint32_t lastEnergy = 0;
+        uint16_t lastValidMs = 0;
+        bool baselineReady = false;
     };
 
     BMI270 imu;
     MotionReading latestMotion;
-    ActivityTracker activity;
+    EnergyTracker energyTracker;
 
     uint8_t deviceId[6] = {};
     uint32_t sequenceNumber = 0;
@@ -153,14 +157,18 @@ namespace
     uint32_t lastLogMs = 0;
     uint32_t lastChannelHopMs = 0;
     uint32_t lastStationControlMs = 0;
+    uint32_t delayedControlReplyMs = 0;
+    uint32_t ignoreMotionUntilMs = 0;
+    uint32_t vibrationRequestStartMs = 0;
 
     bool sensorReady = false;
     bool espNowReady = false;
     bool forceStatusSend = false;
+    bool vibrationMotorOn = false;
     float batteryVoltage = 0.0F;
     uint8_t batteryPercent = BATTERY_UNKNOWN;
     StationState stationState = StationState::Unknown;
-    bool stationRequiresActivity = false;
+    bool stationRequestsVibration = false;
     uint8_t espNowChannel = ESP_NOW_MIN_CHANNEL;
 
     bool beginBmi270()
@@ -217,61 +225,65 @@ namespace
         batteryPercent = estimateBatteryPercent(batteryVoltage);
     }
 
-    float magnitude3(float x, float y, float z)
+    float noiseFilteredAbs(float value, float noiseFloor)
     {
-        return sqrtf((x * x) + (y * y) + (z * z));
+        const float magnitude = fabsf(value);
+        return magnitude <= noiseFloor ? 0.0F : magnitude - noiseFloor;
     }
 
-    uint8_t calculateInstantScore(const MotionReading &reading)
+    void finishEnergyWindows(uint32_t now)
     {
-        const float accelDelta = fabsf(magnitude3(reading.accelX, reading.accelY, reading.accelZ) - 1.0F);
-        const float gyroMagnitude = magnitude3(reading.gyroX, reading.gyroY, reading.gyroZ);
-        const float accelScore = constrain((accelDelta / 0.65F) * 100.0F, 0.0F, 100.0F);
-        const float gyroScore = constrain((gyroMagnitude / 240.0F) * 100.0F, 0.0F, 100.0F);
-        return static_cast<uint8_t>(roundf(max(accelScore, gyroScore)));
-    }
-
-    void updateActivity(const MotionReading &reading)
-    {
-        const uint32_t now = millis();
-        if (activity.lastUpdateMs == 0)
+        if (energyTracker.windowStartMs == 0)
         {
-            activity.lastUpdateMs = now;
+            energyTracker.windowStartMs = now;
             return;
         }
 
-        const uint32_t dt = now - activity.lastUpdateMs;
-        activity.lastUpdateMs = now;
-
-        const float accelDelta = fabsf(magnitude3(reading.accelX, reading.accelY, reading.accelZ) - 1.0F);
-        const float gyroMagnitude = magnitude3(reading.gyroX, reading.gyroY, reading.gyroZ);
-        const bool moving = accelDelta >= ACTIVE_ACCEL_DELTA_G || gyroMagnitude >= ACTIVE_GYRO_DPS;
-        const uint8_t instantScore = calculateInstantScore(reading);
-
-        activity.scoreEma = (activity.scoreEma * 0.85F) + (static_cast<float>(instantScore) * 0.15F);
-
-        if (moving)
+        while (now - energyTracker.windowStartMs >= ENERGY_WINDOW_MS)
         {
-            activity.candidateActiveMs += dt;
-            activity.pauseMs = 0;
-            if (activity.candidateActiveMs >= MOVEMENT_CONFIRM_MS)
-            {
-                activity.activeMs += dt;
-                activity.motionPresent = true;
-            }
+            energyTracker.lastEnergy = energyTracker.energy;
+            energyTracker.lastValidMs = energyTracker.validMs;
+            energyTracker.energy = 0;
+            energyTracker.validMs = 0;
+            energyTracker.windowStartMs += ENERGY_WINDOW_MS;
+            forceStatusSend = true;
         }
-        else if (activity.motionPresent && activity.pauseMs + dt <= PAUSE_TOLERANCE_MS)
+    }
+
+    void resetEnergyBaseline(uint32_t now)
+    {
+        energyTracker.baselineReady = false;
+        energyTracker.lastSampleMs = now;
+    }
+
+    void accumulateEnergy(const MotionReading &reading, uint32_t now)
+    {
+        finishEnergyWindows(now);
+
+        if (!energyTracker.baselineReady)
         {
-            activity.pauseMs += dt;
-            activity.motionPresent = true;
+            latestMotion = reading;
+            energyTracker.lastSampleMs = now;
+            energyTracker.baselineReady = true;
+            return;
         }
-        else
-        {
-            activity.activeMs = 0;
-            activity.candidateActiveMs = 0;
-            activity.pauseMs = 0;
-            activity.motionPresent = false;
-        }
+
+        const uint32_t dt = constrain(now - energyTracker.lastSampleMs, 1UL, 100UL);
+        energyTracker.lastSampleMs = now;
+
+        const float accelDx = noiseFilteredAbs(reading.accelX - latestMotion.accelX, ACCEL_NOISE_FLOOR_G);
+        const float accelDy = noiseFilteredAbs(reading.accelY - latestMotion.accelY, ACCEL_NOISE_FLOOR_G);
+        const float accelDz = noiseFilteredAbs(reading.accelZ - latestMotion.accelZ, ACCEL_NOISE_FLOOR_G);
+        const float gyroDx = noiseFilteredAbs(reading.gyroX - latestMotion.gyroX, GYRO_NOISE_FLOOR_DPS);
+        const float gyroDy = noiseFilteredAbs(reading.gyroY - latestMotion.gyroY, GYRO_NOISE_FLOOR_DPS);
+        const float gyroDz = noiseFilteredAbs(reading.gyroZ - latestMotion.gyroZ, GYRO_NOISE_FLOOR_DPS);
+
+        const float accelEnergy = ((accelDx * accelDx) + (accelDy * accelDy) + (accelDz * accelDz)) * ACCEL_ENERGY_SCALE;
+        const float gyroEnergy = ((gyroDx * gyroDx) + (gyroDy * gyroDy) + (gyroDz * gyroDz)) * GYRO_ENERGY_SCALE;
+        energyTracker.energy += static_cast<uint32_t>(roundf((accelEnergy + gyroEnergy) * static_cast<float>(dt)));
+        energyTracker.validMs = static_cast<uint16_t>(min<uint32_t>(ENERGY_WINDOW_MS, energyTracker.validMs + dt));
+
+        latestMotion = reading;
     }
 
     void updateMotion()
@@ -283,6 +295,13 @@ namespace
         }
 
         lastSampleMs = now;
+        finishEnergyWindows(now);
+
+        if (now < ignoreMotionUntilMs)
+        {
+            resetEnergyBaseline(now);
+            return;
+        }
 
         if (!sensorReady)
         {
@@ -303,13 +322,14 @@ namespace
             return;
         }
 
-        latestMotion.accelX = imu.data.accelX;
-        latestMotion.accelY = imu.data.accelY;
-        latestMotion.accelZ = imu.data.accelZ;
-        latestMotion.gyroX = imu.data.gyroX;
-        latestMotion.gyroY = imu.data.gyroY;
-        latestMotion.gyroZ = imu.data.gyroZ;
-        updateActivity(latestMotion);
+        MotionReading reading;
+        reading.accelX = imu.data.accelX;
+        reading.accelY = imu.data.accelY;
+        reading.accelZ = imu.data.accelZ;
+        reading.gyroX = imu.data.gyroX;
+        reading.gyroY = imu.data.gyroY;
+        reading.gyroZ = imu.data.gyroZ;
+        accumulateEnergy(reading, now);
     }
 
     BraceletState currentBraceletState()
@@ -321,10 +341,6 @@ namespace
         if (isBatteryLow())
         {
             return BraceletState::LowBattery;
-        }
-        if (activity.motionPresent)
-        {
-            return BraceletState::Active;
         }
         return BraceletState::Ready;
     }
@@ -349,9 +365,9 @@ namespace
         {
             flags |= FLAG_SENSOR_READY;
         }
-        if (activity.motionPresent)
+        if (vibrationMotorOn)
         {
-            flags |= FLAG_MOTION_PRESENT;
+            flags |= FLAG_VIBRATION_ACTIVE;
         }
         return flags;
     }
@@ -403,20 +419,7 @@ namespace
 
     uint32_t currentSendPeriod()
     {
-        const BraceletState state = currentBraceletState();
-        if (state == BraceletState::Fault || state == BraceletState::LowBattery)
-        {
-            return SEND_PERIOD_FAULT_MS;
-        }
-        if (stationState == StationState::Ringing || stationState == StationState::ValidatingActivity || stationRequiresActivity)
-        {
-            return SEND_PERIOD_ACTIVE_MS;
-        }
-        if (stationState == StationState::Armed)
-        {
-            return SEND_PERIOD_ARMED_MS;
-        }
-        return SEND_PERIOD_READY_MS;
+        return SEND_PERIOD_MS;
     }
 
     void sendBraceletStatus(bool force = false)
@@ -439,11 +442,13 @@ namespace
         BraceletStatusPacket packet = {};
         fillHeader(packet.header, MESSAGE_BRACELET_STATUS);
         packet.braceletState = static_cast<uint8_t>(currentBraceletState());
-        packet.activityScore = static_cast<uint8_t>(roundf(constrain(activity.scoreEma, 0.0F, 100.0F)));
-        packet.validated = activity.motionPresent ? 1 : 0;
+        packet.activityScore = static_cast<uint8_t>(constrain(energyTracker.lastEnergy / 40, 0UL, 100UL));
+        packet.validated = 0;
         packet.batteryVoltageMv = batteryVoltage > 0.1F ? static_cast<uint16_t>(roundf(batteryVoltage * 1000.0F)) : 0;
         packet.faultCode = static_cast<uint8_t>(currentFaultCode());
         packet.flags = currentFlags();
+        packet.energy = energyTracker.lastEnergy;
+        packet.energyValidMs = energyTracker.lastValidMs;
 
         const esp_err_t result = esp_now_send(BROADCAST_PEER, reinterpret_cast<const uint8_t *>(&packet), sizeof(packet));
         if (result != ESP_OK)
@@ -469,10 +474,20 @@ namespace
             return;
         }
 
+        const uint32_t now = millis();
+        const bool nextVibrationRequest = packet.vibrationRequest != 0;
         stationState = static_cast<StationState>(packet.stationState);
-        stationRequiresActivity = packet.activityRequired != 0;
-        lastStationControlMs = millis();
-        sendBraceletStatus(true);
+        if (nextVibrationRequest && !stationRequestsVibration)
+        {
+            vibrationRequestStartMs = now;
+        }
+        else if (!nextVibrationRequest)
+        {
+            vibrationRequestStartMs = 0;
+        }
+        stationRequestsVibration = nextVibrationRequest;
+        lastStationControlMs = now;
+        delayedControlReplyMs = now + CONTROL_REPLY_DELAY_MS;
     }
 
     void onEspNowReceive(const uint8_t *, const uint8_t *data, int length)
@@ -542,16 +557,55 @@ namespace
         lastLogMs = now;
         Serial.print("bracelet_state:");
         Serial.print(static_cast<uint8_t>(currentBraceletState()));
-        Serial.print(",activity_score:");
-        Serial.print(static_cast<uint8_t>(roundf(constrain(activity.scoreEma, 0.0F, 100.0F))));
-        Serial.print(",active_ms:");
-        Serial.print(activity.activeMs);
-        Serial.print(",motion_present:");
-        Serial.print(activity.motionPresent ? "true" : "false");
+        Serial.print(",energy:");
+        Serial.print(energyTracker.lastEnergy);
+        Serial.print(",energy_valid_ms:");
+        Serial.print(energyTracker.lastValidMs);
+        Serial.print(",vibrating:");
+        Serial.print(vibrationMotorOn ? "true" : "false");
         Serial.print(",battery_percent:");
         Serial.print(batteryPercent);
         Serial.print(",battery_v:");
         Serial.println(batteryVoltage, 3);
+    }
+
+    void updateVibrationMotor()
+    {
+        const uint32_t now = millis();
+        if (stationRequestsVibration && vibrationRequestStartMs == 0)
+        {
+            vibrationRequestStartMs = now;
+        }
+
+        const uint32_t vibrationElapsedMs = stationRequestsVibration ? now - vibrationRequestStartMs : 0;
+        const bool shouldPulse = stationRequestsVibration && (vibrationElapsedMs % VIBRATION_PERIOD_MS) < VIBRATION_ON_MS;
+
+        if (shouldPulse && !vibrationMotorOn)
+        {
+            ignoreMotionUntilMs = now + VIBRATION_ON_MS + VIBRATION_SETTLE_MS;
+        }
+        else if (!shouldPulse && vibrationMotorOn)
+        {
+            ignoreMotionUntilMs = max(ignoreMotionUntilMs, now + VIBRATION_SETTLE_MS);
+        }
+
+        vibrationMotorOn = shouldPulse;
+        digitalWrite(Pin::VIBRATION_MOTOR, shouldPulse ? HIGH : LOW);
+    }
+
+    void sendDelayedControlReply()
+    {
+        if (delayedControlReplyMs == 0)
+        {
+            return;
+        }
+
+        const uint32_t now = millis();
+        if (now - delayedControlReplyMs < UINT32_MAX / 2)
+        {
+            delayedControlReplyMs = 0;
+            sendBraceletStatus(true);
+        }
     }
 }
 
@@ -578,8 +632,10 @@ void setup()
 void loop()
 {
     updateBattery();
+    updateVibrationMotor();
     updateMotion();
     updateEspNowChannel();
+    sendDelayedControlReply();
     sendBraceletStatus();
     logTelemetry();
 }

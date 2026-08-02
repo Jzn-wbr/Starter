@@ -22,9 +22,10 @@ The schema intentionally keeps one active `main` row per responsibility:
 - `alarm_audio_selection`: what the next alarm should play and at what volume.
 - `music_tracks`: uploaded wake-up sounds.
 - `station_status`: station state and station-side problem reporting.
-- `bracelet_status`: latest bracelet state as seen and published by the station.
+- `bracelet_status`: latest bracelet state, energy window, vibration state, and battery voltage as seen and published by the station.
 
 This split favors readability over the smallest possible number of Supabase reads. The station should load `alarm_plan` and `alarm_audio_selection` together, then cache the last valid combined configuration locally.
+Bracelet energy remains station-side alarm input; the station does not stream energy to Supabase at bracelet telemetry rate.
 
 This file is the current v1 schema, not a reversible migration. If an older prototype database already contains `alarm_config` or `device_status`, migrate or drop those old tables manually after preserving any data you still need.
 
@@ -76,6 +77,11 @@ erDiagram
     text problem_message
     numeric bracelet_battery_voltage
     bigint bracelet_last_seen_ms
+    integer bracelet_energy
+    integer bracelet_energy_valid_ms
+    integer bracelet_energy_threshold
+    integer energy_mute_remaining_ms
+    boolean bracelet_vibrating
     timestamptz updated_at
   }
 

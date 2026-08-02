@@ -93,6 +93,11 @@ Single station-published row for the latest bracelet state as seen by the statio
 - `problem_message`: short human-readable diagnostic text.
 - `bracelet_battery_voltage`: bracelet battery terminal voltage in volts, or `null` if unknown.
 - `bracelet_last_seen_ms`: station uptime timestamp for the last bracelet packet, or `null`.
+- `bracelet_energy`: latest 200 ms energy window reported by the bracelet.
+- `bracelet_energy_valid_ms`: measured time inside that 200 ms window, excluding vibration and settling time.
+- `bracelet_energy_threshold`: station threshold used to mute alarm audio for v1. The current firmware default is `1333333`.
+- `energy_mute_remaining_ms`: remaining station-side mute time produced by bracelet energy.
+- `bracelet_vibrating`: whether the bracelet vibration motor is currently active.
 - `updated_at`: SQL `timestamptz`, updated automatically by the database on row update.
 
 The app reads this status. The bracelet does not write to Supabase in v1.
@@ -130,8 +135,8 @@ The bracelet should expose:
 
 - `charging`: bracelet is on the station contacts or charging input.
 - `ready`: enough battery and sensor link is usable.
-- `active`: activity is currently detected.
-- `validated`: bracelet currently reports movement sufficient for the station to treat the user as active during the alarm window.
+- `active`: reserved for future richer activity states; the simple energy flow normally reports `ready`.
+- `validated`: reserved compatibility state; the simple energy flow does not use it for alarm authority.
 - `low_battery`: battery may be insufficient for reliable wake-up validation.
 - `fault`: sensor, power, or firmware state prevents reliable validation.
 
@@ -146,17 +151,19 @@ Allowed station transitions for v1:
 - `armed -> idle`: app disables the next alarm.
 - `armed -> ringing`: alarm time is reached and prerequisites are valid.
 - `armed -> fault`: a blocking problem appears before alarm time.
-- `ringing -> validating_activity`: bracelet movement is present during the alarm window, so alarm audio is muted while monitoring continues.
-- `ringing -> fault`: a blocking technical fault prevents normal validation or audio output.
+- `ringing -> validating_activity`: bracelet energy reaches `1333333` during the alarm window, so alarm audio is muted for 10 seconds while monitoring continues.
+- `ringing -> ringing`: bracelet packets are lost for more than `3s`; publish `bracelet_missing`, keep alarm audio playing, and resume movement detection automatically when packets return.
+- `ringing -> fault`: station audio output fails.
 - `ringing -> stopped`: the 15-minute alarm activity window has ended.
-- `validating_activity -> ringing`: movement stops before the 15-minute window has ended.
+- `validating_activity -> ringing`: the 10-second energy mute and the 3-second pre-unmute bracelet warning expire before the 15-minute window has ended.
 - `validating_activity -> stopped`: the 15-minute alarm activity window has ended.
-- `validating_activity -> fault`: bracelet link, bracelet sensor, or station audio becomes invalid.
+- `validating_activity -> ringing`: bracelet packets are lost for more than `3s`; cancel the movement mute, publish `bracelet_missing`, and keep alarm audio playing until telemetry returns.
+- `validating_activity -> fault`: station audio output fails.
 - `stopped -> idle`: alarm cycle is complete.
 - `fault -> idle`: user fixes the issue and station reloads a valid disabled/no-alarm state.
 - `fault -> armed`: user fixes the issue and station reloads a valid enabled alarm.
 
-Do not add a normal stop or snooze transition from `ringing` or `validating_activity`. The v1 alarm stops only when the fixed 15-minute activity window ends; bracelet movement only mutes alarm audio during that window.
+Do not add a normal stop or snooze transition from `ringing` or `validating_activity`. The v1 alarm stops only when the fixed 15-minute activity window ends; bracelet energy only mutes alarm audio during that window.
 
 ## Failure Policy
 
@@ -177,7 +184,7 @@ Music streaming failure is not a reason to skip the alarm. If the selected Supab
 
 Network or Supabase failures should be visible in station logs and in app-readable status when possible.
 
-If a blocking fault appears while already ringing, prefer `fault` over an endless alarm that cannot be validated. This is a product safety rule for bugs and broken technical states, not a user-facing stop feature.
+If the bracelet disappears for more than `3s` while already ringing or validating, publish `bracelet_missing` but keep alarm audio playing for the remainder of the fixed activity window. Missing telemetry is not evidence of movement, so any active energy mute is cancelled. When packets return, clear the missing problem and resume movement detection automatically. Do not mark the alarm revision complete because of bracelet packet loss. If station audio itself fails, prefer `fault` over a fake alarm state.
 
 ## Battery Readiness Contract
 
@@ -218,23 +225,24 @@ Use compact binary packets. All packets start with:
 Fields:
 
 - `bracelet_state`: enum from System States.
-- `activity_score`: uint8 `0..100`.
-- `validated`: boolean.
+- `activity_score`: uint8 compatibility view of latest energy, `0..100`.
+- `validated`: boolean, always false in the simple energy v1 flow.
 - `battery_voltage_mv`: uint16 bracelet battery terminal voltage in millivolts, or `0` if unknown.
 - `fault_code`: problem code enum, or `none`.
-- `flags`: bitmask for `charging`, `sensor_ready`, `motion_present`.
+- `flags`: bitmask for `charging`, `sensor_ready`, `vibration_active`.
+- `energy`: uint32 energy measured over the latest 200 ms window.
+- `energy_valid_ms`: uint16 measured milliseconds in that window, excluding bracelet vibration/settling.
 
 Default send rate:
 
-- Ready/idle: every `5s`.
-- Alarm armed within 10 minutes: every `2s`.
-- Ringing/validating: `5 Hz`.
-- Fault: every `2s`.
+- Bracelet status is sent over ESP-NOW at `5 Hz` in v1 so the station can react quickly to activity. The station must not mirror this to Supabase at 5 Hz.
+- Station control is sent on a `700ms` cadence in v1, plus immediately on important audio state changes. The cadence intentionally avoids a stable multiple of the bracelet `200ms` send period.
 
 Station timeout rules:
 
 - If no bracelet packet for `15s` while `armed`, publish `bracelet_missing`.
-- If no bracelet packet for `5s` while `ringing` or `validating_activity`, enter `fault` with `bracelet_missing`.
+- If no bracelet packet for `3s` while `ringing` or `validating_activity`, publish `bracelet_missing`, keep alarm audio playing, and resume movement detection when packets return.
+- After a Supabase HTTPS failure, the station waits `30s` before trying another Supabase request. This avoids repeated TLS allocation failures during low-memory recovery after streaming.
 
 ### `station_control`
 
@@ -242,25 +250,27 @@ Fields:
 
 - `station_state`: enum from System States.
 - `alarm_revision`: current loaded `alarm_plan.revision`.
-- `activity_required`: boolean.
+- `vibration_request`: boolean; true while the station is producing audible alarm audio, and during the 3-second pre-unmute warning before audio resumes after an energy mute.
 - `threshold_profile`: `normal` for v1.
 
 Station control messages are optional in v1. The bracelet must still be able to send status without first receiving station control.
+When `vibration_request` is true, the bracelet pulses its motor instead of holding it continuously on. The current firmware default is `500ms` on every `4s`, with BMI270 energy ignored while the motor is active and during the short settling time after it stops.
+After receiving `station_control`, the bracelet delays its explicit reply by `100ms` instead of replying in the same radio slot. This reduces regular ESP-NOW collisions with station control packets.
 
-The station remains authoritative. Bracelet movement/validation is input to the station, not a direct stop command.
+The station remains authoritative. Bracelet energy is input to the station, not a direct stop command.
 
 ## Activity Window Contract
 
 Use these v1 defaults unless physical testing proves they are wrong:
 
 - The station opens a fixed `15min` activity window at the configured alarm time.
-- During that window, the station plays alarm audio when the bracelet is missing or reports no movement.
-- During that window, bracelet movement mutes alarm output with station `XSMT` on GPIO26, but does not stop the stream or complete the alarm revision.
-- If movement stops before the window ends, the station unmutes `XSMT` and continues the already-started alarm audio.
-- When the 15-minute window ends, the station stops alarm audio and marks the alarm revision complete, regardless of movement history.
-- Activity score should represent recent movement intensity on a `0..100` scale.
+- During that window, the station plays alarm audio when bracelet energy is below threshold or missing.
+- If a bracelet energy window reaches the station threshold, currently `1333333`, the station mutes alarm output with station `XSMT` on GPIO26 for `10s`, but does not stop the stream or complete the alarm revision.
+- When the 10s mute expires and no new energy threshold event occurred, the station keeps `XSMT` muted for a 3-second pre-unmute warning while requesting bracelet vibration. If no new threshold event occurs during that warning, the station unmutes `XSMT` and continues the already-started alarm audio. A short `500ms` unmute grace is allowed after the warning to absorb ESP-NOW timing jitter and avoid audible micro-interruptions between adjacent mute windows.
+- When the 15-minute window ends, the station stops alarm audio and marks the alarm revision complete, regardless of energy history.
+- Activity score is a compatibility `0..100` projection of latest energy.
 
-The bracelet computes current movement and may send `validated=true` as a compact "movement present" signal for v1 compatibility. The station decides whether audio should play and when the alarm revision is complete.
+The bracelet computes only energy over 200 ms windows. It does not validate activity. The station decides whether audio should play and when the alarm revision is complete.
 
 ## Fallback Sound Contract
 

@@ -7,6 +7,7 @@ actor "User" as User
 
 rectangle "Wake-up PWA" {
   usecase "Upload wake-up music" as UploadMusic
+  usecase "Clean MP3 metadata" as CleanMp3Metadata
   usecase "Browse music library" as BrowseMusic
   usecase "Select wake-up track" as SelectTrack
   usecase "Select local fallback sound" as SelectFallback
@@ -46,6 +47,8 @@ ReceiveUpdates --> ViewBraceletStatus
 
 UploadMusic --> StoreAudio
 UploadMusic --> StoreMusicMetadata
+UploadMusic --> CleanMp3Metadata
+CleanMp3Metadata --> StoreAudio
 BrowseMusic --> StoreMusicMetadata
 SelectTrack --> StoreAlarmAudio
 SelectFallback --> StoreAlarmAudio

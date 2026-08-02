@@ -39,6 +39,8 @@ type StatusTarget = 'station' | 'bracelet'
 
 const BATTERY_EMPTY_V = 3.3
 const BATTERY_FULL_V = 4.2
+const ACCEPTED_AUDIO_TYPES = new Set(['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4'])
+const ACCEPTED_AUDIO_EXTENSIONS = new Set(['mp3', 'wav', 'ogg', 'm4a', 'mp4'])
 
 const activeTab = ref<TabName>('alarm')
 const loading = ref(true)
@@ -65,6 +67,11 @@ let pollTimer: ReturnType<typeof window.setInterval> | undefined
 let slotTimer: ReturnType<typeof window.setInterval> | undefined
 let realtimeChannel: RealtimeChannel | undefined
 
+type PreparedAudioFile = {
+  file: File
+  strippedBytes: number
+}
+
 const selectedSlot = computed(() => slots.value[selectedSlotIndex.value] ?? slots.value[0])
 const selectedTrack = computed(() => {
   const selectedId = audioSelection.value?.selected_track_id
@@ -88,7 +95,6 @@ const braceletStale = computed(() => isStale(braceletStatus.value?.updated_at))
 const canUseSupabase = computed(() => SUPABASE_CONFIGURED)
 const stationBatteryPercent = computed(() => estimateBatteryPercent(stationStatus.value?.station_battery_voltage))
 const braceletBatteryPercent = computed(() => estimateBatteryPercent(braceletStatus.value?.bracelet_battery_voltage))
-
 const stationStateLabels: Record<string, string> = {
   idle: 'Au repos',
   armed: 'Armée',
@@ -340,6 +346,68 @@ async function chooseTrack(track: MusicTrack) {
   await updateAudioSelection(track.id)
 }
 
+function audioExtension(fileName: string) {
+  return fileName.split('.').pop()?.toLowerCase() ?? ''
+}
+
+function isAcceptedAudioFile(file: File) {
+  return ACCEPTED_AUDIO_TYPES.has(file.type) || ACCEPTED_AUDIO_EXTENSIONS.has(audioExtension(file.name))
+}
+
+function isMp3File(file: File) {
+  return file.type === 'audio/mpeg' || audioExtension(file.name) === 'mp3'
+}
+
+function readSynchsafeSize(bytes: Uint8Array, offset: number) {
+  if ([bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]].some((value) => value & 0x80)) {
+    return -1
+  }
+
+  return (bytes[offset] << 21) | (bytes[offset + 1] << 14) | (bytes[offset + 2] << 7) | bytes[offset + 3]
+}
+
+async function prepareAudioFileForUpload(file: File): Promise<PreparedAudioFile> {
+  if (!isMp3File(file)) {
+    return { file, strippedBytes: 0 }
+  }
+
+  const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  let start = 0
+  let end = bytes.length
+
+  while (start + 10 <= end && bytes[start] === 0x49 && bytes[start + 1] === 0x44 && bytes[start + 2] === 0x33) {
+    const tagSize = readSynchsafeSize(bytes, start + 6)
+    const hasFooter = (bytes[start + 5] & 0x10) !== 0
+    const fullTagSize = tagSize >= 0 ? 10 + tagSize + (hasFooter ? 10 : 0) : -1
+
+    if (fullTagSize <= 10 || start + fullTagSize > end) {
+      throw new Error('En-tête MP3 ID3 invalide. Réencode le fichier avant de l’ajouter.')
+    }
+
+    start += fullTagSize
+  }
+
+  if (end - start >= 128 && bytes[end - 128] === 0x54 && bytes[end - 127] === 0x41 && bytes[end - 126] === 0x47) {
+    end -= 128
+  }
+
+  if (start === 0 && end === bytes.length) {
+    return { file, strippedBytes: 0 }
+  }
+
+  if (start >= end) {
+    throw new Error('Le nettoyage a retiré tout le fichier MP3. Réencode le fichier avant de l’ajouter.')
+  }
+
+  const cleanedFile = new File([buffer.slice(start, end)], file.name, {
+    type: 'audio/mpeg',
+    lastModified: Date.now(),
+  })
+
+  return { file: cleanedFile, strippedBytes: bytes.length - (end - start) }
+}
+
 async function updateAudioSelection(trackId: string | null) {
   clearMessages()
   try {
@@ -388,14 +456,17 @@ async function uploadMusic(event: Event) {
   uploading.value = true
 
   try {
-    if (!['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4'].includes(file.type)) {
+    if (!isAcceptedAudioFile(file)) {
       throw new Error('Format non accepté. Utilise MP3, WAV, OGG ou MP4 audio.')
     }
 
+    const preparedAudio = await prepareAudioFileForUpload(file)
     const client = requireSupabase()
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-')
     const storagePath = `music/${crypto.randomUUID()}-${safeName}`
-    const { error: uploadError } = await client.storage.from('wake-up-music').upload(storagePath, file)
+    const { error: uploadError } = await client.storage.from('wake-up-music').upload(storagePath, preparedAudio.file, {
+      contentType: preparedAudio.file.type || file.type || 'application/octet-stream',
+    })
 
     if (uploadError) throw uploadError
 
@@ -409,7 +480,9 @@ async function uploadMusic(event: Event) {
 
     if (insertError) throw insertError
 
-    successMessage.value = 'Musique ajoutée.'
+    successMessage.value = preparedAudio.strippedBytes > 0
+      ? 'Musique ajoutée après nettoyage des métadonnées MP3.'
+      : 'Musique ajoutée.'
     input.value = ''
     await loadMusicTracks()
   } catch (error) {

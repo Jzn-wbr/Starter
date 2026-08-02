@@ -14,13 +14,15 @@ armed --> ringing : local alarm time reached\nbracelet ready
 armed --> idle : 15-minute activity window expired\nor revision already completed
 armed --> fault : no valid time/config\nbracelet missing/low/fault
 
-ringing --> validating_activity : bracelet movement present\nXSMT LOW, stream continues
+ringing --> validating_activity : bracelet energy >= 1,333,333\nXSMT LOW for 10 s, stream continues
 ringing --> stopped : 15-minute activity window ended
-ringing --> fault : audio fault or bracelet timeout
+ringing --> ringing : bracelet timeout > 3 s\npublish bracelet_missing, keep audio playing
+ringing --> fault : audio fault
 
-validating_activity --> ringing : bracelet movement absent\nXSMT HIGH, same audio continues
+validating_activity --> ringing : 10 s energy mute expires\n3 s bracelet warning expires\nplus 500 ms jitter guard\nXSMT HIGH, same audio continues
+validating_activity --> ringing : bracelet timeout > 3 s\nunmute audio, publish bracelet_missing
 validating_activity --> stopped : 15-minute activity window ended
-validating_activity --> fault : bracelet/audio fault
+validating_activity --> fault : audio fault
 
 stopped --> idle : alarm cycle complete
 
@@ -34,12 +36,22 @@ Periodic config refresh does not leave ringing
 or validating_activity.
 Network status refreshes are deferred while
 streaming remote audio to avoid underruns.
+The station uses an enlarged audio buffer and
+prioritizes audio.loop() while remote audio runs.
+Transition status writes are also deferred, and
+the remote stream is primed before the station
+requests bracelet vibration.
 end note
 
 note bottom
 There is no normal stop or snooze transition.
-Bracelet movement only mutes audio during the
+Bracelet energy only mutes audio during the
 fixed 15-minute activity window by toggling XSMT.
+The station mutes for 10 seconds when a valid
+200 ms bracelet energy window reaches 1,333,333.
+If bracelet telemetry is missing for more than
+3 seconds, audio remains audible and movement
+muting resumes automatically when packets return.
 The stream or fallback audio keeps running until
 the station marks the alarm complete when that
 window ends.

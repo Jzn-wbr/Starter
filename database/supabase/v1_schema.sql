@@ -137,6 +137,17 @@ create table if not exists bracelet_status (
   bracelet_last_seen_ms bigint check (
     bracelet_last_seen_ms is null or bracelet_last_seen_ms >= 0
   ),
+  bracelet_energy integer not null default 0 check (bracelet_energy >= 0),
+  bracelet_energy_valid_ms integer not null default 0 check (
+    bracelet_energy_valid_ms between 0 and 200
+  ),
+  bracelet_energy_threshold integer not null default 1333333 check (
+    bracelet_energy_threshold >= 0
+  ),
+  energy_mute_remaining_ms integer not null default 0 check (
+    energy_mute_remaining_ms >= 0
+  ),
+  bracelet_vibrating boolean not null default false,
   updated_at timestamptz not null default now(),
   constraint bracelet_status_single_row check (id = 'main')
 );
@@ -160,12 +171,60 @@ alter table bracelet_status
   drop column if exists bracelet_battery_percent;
 
 alter table bracelet_status
+  add column if not exists bracelet_energy integer not null default 0;
+
+alter table bracelet_status
+  add column if not exists bracelet_energy_valid_ms integer not null default 0;
+
+alter table bracelet_status
+  add column if not exists bracelet_energy_threshold integer not null default 1333333;
+
+alter table bracelet_status
+  alter column bracelet_energy_threshold set default 1333333;
+
+alter table bracelet_status
+  add column if not exists energy_mute_remaining_ms integer not null default 0;
+
+alter table bracelet_status
+  add column if not exists bracelet_vibrating boolean not null default false;
+
+alter table bracelet_status
   drop constraint if exists bracelet_status_battery_voltage_range;
 
 alter table bracelet_status
   add constraint bracelet_status_battery_voltage_range check (
     bracelet_battery_voltage is null
     or bracelet_battery_voltage between 0 and 6
+  );
+
+alter table bracelet_status
+  drop constraint if exists bracelet_status_energy_range;
+
+alter table bracelet_status
+  add constraint bracelet_status_energy_range check (bracelet_energy >= 0);
+
+alter table bracelet_status
+  drop constraint if exists bracelet_status_energy_valid_ms_range;
+
+alter table bracelet_status
+  add constraint bracelet_status_energy_valid_ms_range check (
+    bracelet_energy_valid_ms between 0 and 200
+  );
+
+alter table bracelet_status
+  drop constraint if exists bracelet_status_energy_threshold_range;
+
+alter table bracelet_status
+  add constraint bracelet_status_energy_threshold_range check (
+    bracelet_energy_threshold >= 0
+  );
+
+alter table bracelet_status
+  drop constraint if exists bracelet_status_mute_remaining_range;
+
+alter table bracelet_status
+  add constraint bracelet_status_mute_remaining_range check (
+    energy_mute_remaining_ms >= 0
   );
 
 drop trigger if exists alarm_plan_set_updated_at on alarm_plan;

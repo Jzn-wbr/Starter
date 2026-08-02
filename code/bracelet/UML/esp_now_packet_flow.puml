@@ -7,14 +7,14 @@ participant "Station ESP32" as Station
 Bracelet -> Bracelet : Read MAC as 6-byte device_id
 Bracelet -> Bracelet : Initialize ESP-NOW in WiFi STA mode
 Bracelet -> Bracelet : Hop ESP-NOW channels 1..13\nuntil station_control is heard
-Bracelet -> Station : bracelet_status broadcast\nprotocol=1, type=1, role=bracelet\nstate, score, validated, battery_voltage_mv, fault, flags
+Bracelet -> Station : bracelet_status broadcast\nprotocol=1, type=1, role=bracelet\nstate, energy, valid_ms, battery_voltage_mv, fault, flags
 
-loop normal ready state
-  Bracelet -> Station : bracelet_status every 5 s
+loop every 200 ms
+  Bracelet -> Station : latest 200 ms energy window
 end
 
-Station -> Bracelet : station_control optional\nprotocol=1, type=2, role=station\nstation_state, revision, activity_required, profile
-Bracelet -> Station : immediate bracelet_status reply
+Station -> Bracelet : station_control optional\nprotocol=1, type=2, role=station\nstation_state, revision, vibration_request, profile
+Bracelet -> Station : bracelet_status reply delayed by 100 ms
 note right of Bracelet
   station_state values mirror the station enum:
   idle=0, armed=1, ringing=2,
@@ -23,19 +23,11 @@ note right of Bracelet
   onto that ESP-NOW channel for 15 seconds.
 end note
 
-alt station ringing or activity_required=true
-  Bracelet -> Station : bracelet_status at 5 Hz
-else station armed
-  Bracelet -> Station : bracelet_status every 2 s
-else bracelet fault or low battery
-  Bracelet -> Station : bracelet_status every 2 s
-end
-
 note right of Station
 Station remains the alarm authority.
-validated=true mirrors current movement in v1.
-Movement mutes alarm audio only during the
-station-owned 15-minute activity window.
+Bracelet energy above threshold mutes alarm
+audio for 10 seconds during the station-owned
+15-minute activity window.
 end note
 
 @enduml
