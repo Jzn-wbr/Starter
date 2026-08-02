@@ -74,7 +74,7 @@ Supabase est utilisé pour stocker la musique, la sélection audio, la prochaine
   \item Supabase est utilisé pour la configuration et les musiques en v1.
   \item Le bracelet communique avec la station par ESP-NOW en v1.
   \item Il n'existe pas de bouton normal stop ou snooze.
-  \item Le son est contrôlé par l'activité du bracelet pendant une fenêtre fixe de quinze minutes.
+  \item Le son est contrôlé par l'activité du bracelet pendant une fenêtre fixe de dix minutes.
   \item Une panne technique bloquante doit placer le système dans un état de défaut visible.
   \item Un échec de streaming Supabase ne doit pas annuler le réveil: la station utilise un son local de secours.
 \end{itemize}
@@ -160,7 +160,7 @@ Les états exposés par la station sont \texttt{idle}, \texttt{armed}, \texttt{r
 
 Une perte ESP-NOW supérieure à trois secondes publie \texttt{bracelet\_missing}. Elle n'annule plus une sourdine déjà accordée. À son expiration, la station demande une vibration identifiée et attend que le bracelet confirme le démarrage réel du moteur avant de laisser trois secondes à l'utilisateur. Sans confirmation après trois secondes, la musique reprend afin qu'une déconnexion ne puisse pas neutraliser le réveil.
 
-La fenêtre d'activité dure quinze minutes à partir de l'heure configurée. À la fin de cette fenêtre, la station arrête le son et marque la révision comme terminée. Il n'y a pas de transition stop ou snooze normale depuis \texttt{ringing} ou \texttt{validating\_activity}.
+La fenêtre d'activité dure dix minutes à partir de l'heure configurée. À la fin de cette fenêtre, la station arrête le son et marque la révision comme terminée. Il n'y a pas de transition stop ou snooze normale depuis \texttt{ringing} ou \texttt{validating\_activity}.
 
 \subsection{Défauts et fallback}
 

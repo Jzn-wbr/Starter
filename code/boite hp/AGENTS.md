@@ -24,11 +24,19 @@ This is a PlatformIO Arduino ESP32 project.
 The current firmware already:
 
 - Connects to WiFi.
+- Synchronizes local time through NTP.
+- Loads, validates, and caches the next Supabase alarm plan.
 - Uses `ESP32-audioI2S`.
 - Loads the selected track from `alarm_audio_selection` and `music_tracks`.
 - Outputs audio over I2S pins for the PCM5102A/PAM8403 audio chain.
+- Runs the fixed alarm activity window and generated local fallback sound.
+- Receives ESP-NOW protocol v2 movement events, acknowledges them, recovers
+  their unelapsed mute time after packet loss, and confirms bracelet vibration
+  before the pre-unmute warning starts.
 
-The current code is still a prototype. Do not assume that alarm scheduling, Supabase config fetching, ESP-NOW bracelet communication, or NTP synchronization already exist unless the code proves it.
+The current code remains a physical prototype: range, battery measurements,
+audio behavior, movement thresholds, and complete wake-up behavior still need
+validation on the final hardware.
 
 ## Target Behavior
 
@@ -39,7 +47,7 @@ The station should:
 - Stream the selected Supabase music file at alarm time.
 - Use a small local fallback alarm sound if Supabase music is unreachable at wake-up time.
 - Connect to the dedicated bracelet over ESP-NOW.
-- Track bracelet movement during the fixed 15-minute activity window after the configured alarm time.
+- Track bracelet movement during the fixed 10-minute activity window after the configured alarm time.
 - Play alarm audio during that window only while bracelet movement is absent, then stop once the window ends.
 - Report WiFi, Supabase, audio, bracelet, and battery/fault states through logs and app-visible status when available.
 - Cache the last valid alarm config locally when implementing Supabase config loading.
@@ -93,7 +101,7 @@ If WiFi, NTP, Supabase, audio streaming, or bracelet communication fails:
 
 - Log a clear state.
 - Keep behavior conservative.
-- During an active 15-minute alarm window, publish `bracelet_missing` after 3
+- During an active 10-minute alarm window, publish `bracelet_missing` after 3
   seconds without bracelet packets. Keep audio audible when no confirmed mute
   exists, but honor the remaining deadline of a mute already granted for a
   confirmed movement event. Process retransmitted events only for the unelapsed

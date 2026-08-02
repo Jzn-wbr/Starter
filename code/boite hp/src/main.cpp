@@ -51,7 +51,7 @@ static const uint32_t ENERGY_UNMUTE_GRACE_MS = 500;
 static const uint32_t REMOTE_AUDIO_PRIME_MS = 700;
 static const uint32_t REMOTE_AUDIO_LOOP_BUDGET_MS = 20;
 static const uint32_t REMOTE_AUDIO_AFTER_CONTROL_MS = 4;
-static const time_t ALARM_WINDOW_SECONDS = 15 * 60;
+static const time_t ALARM_WINDOW_SECONDS = 10 * 60;
 static const float BATTERY_DIVIDER_RATIO = 2.0F;
 static const float BATTERY_EMPTY_V = 3.30F;
 static const float BATTERY_FULL_V = 4.20F;
@@ -1282,7 +1282,7 @@ static void updateAlarmState()
     {
       stopAlarmAudio();
       saveCompletedAlarmRevision(alarmConfig.revision);
-      setStationState(StationState::Stopped, ProblemCode::None, "15 minute alarm activity window ended");
+      setStationState(StationState::Stopped, ProblemCode::None, "10 minute alarm activity window ended");
       requestStationStatusPublish();
       return;
     }
@@ -1371,7 +1371,7 @@ static void updateAlarmState()
   if (alarmWindowHasEnded(alarmConfig))
   {
     saveCompletedAlarmRevision(alarmConfig.revision);
-    setStationState(StationState::Idle, ProblemCode::None, "15 minute alarm activity window already ended");
+    setStationState(StationState::Idle, ProblemCode::None, "10 minute alarm activity window already ended");
     requestStationStatusPublish();
     return;
   }

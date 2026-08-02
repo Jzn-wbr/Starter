@@ -154,9 +154,9 @@ Allowed station transitions for v1:
 - `ringing -> validating_activity`: bracelet energy reaches `1333333` during the alarm window, so alarm audio is muted for 10 seconds while monitoring continues.
 - `ringing -> ringing`: bracelet packets are lost for more than `3s`; publish `bracelet_missing`, keep alarm audio playing, and resume movement detection automatically when packets return.
 - `ringing -> fault`: station audio output fails.
-- `ringing -> stopped`: the 15-minute alarm activity window has ended.
-- `validating_activity -> ringing`: the 10-second energy mute and the 3-second pre-unmute bracelet warning expire before the 15-minute window has ended.
-- `validating_activity -> stopped`: the 15-minute alarm activity window has ended.
+- `ringing -> stopped`: the 10-minute alarm activity window has ended.
+- `validating_activity -> ringing`: the 10-second energy mute and the 3-second pre-unmute bracelet warning expire before the 10-minute window has ended.
+- `validating_activity -> stopped`: the 10-minute alarm activity window has ended.
 - `validating_activity -> validating_activity`: bracelet packets are lost for more than `3s`; publish `bracelet_missing` but honor the remaining confirmed movement mute.
 - `validating_activity -> ringing`: the confirmed movement mute expires and no vibration acknowledgement or new movement event prevents audio from resuming.
 - `validating_activity -> fault`: station audio output fails.
@@ -164,7 +164,7 @@ Allowed station transitions for v1:
 - `fault -> idle`: user fixes the issue and station reloads a valid disabled/no-alarm state.
 - `fault -> armed`: user fixes the issue and station reloads a valid enabled alarm.
 
-Do not add a normal stop or snooze transition from `ringing` or `validating_activity`. The v1 alarm stops only when the fixed 15-minute activity window ends; bracelet energy only mutes alarm audio during that window.
+Do not add a normal stop or snooze transition from `ringing` or `validating_activity`. The v1 alarm stops only when the fixed 10-minute activity window ends; bracelet energy only mutes alarm audio during that window.
 
 ## Failure Policy
 
@@ -274,12 +274,12 @@ The station remains authoritative. Bracelet energy is input to the station, not 
 
 Use these v1 defaults unless physical testing proves they are wrong:
 
-- The station opens a fixed `15min` activity window at the configured alarm time.
+- The station opens a fixed `10min` activity window at the configured alarm time.
 - During that window, the station plays alarm audio when bracelet energy is below threshold or missing.
 - If a bracelet energy window reaches the station threshold, currently `1333333`, the bracelet retains it as a movement event for up to `10s` and retransmits it until acknowledged. The station revalidates the event and mutes alarm output with station `XSMT` on GPIO26 for the unelapsed part of the original 10-second interval. For example, an event received at age `4s` produces `6s` of mute.
 - Duplicate, out-of-order, pre-alarm, invalid, or at-least-10-second-old movement events do not restart the mute. A newer valid event may extend the existing deadline.
 - When the mute expires, the station keeps `XSMT` muted and requests vibration with a new identifier. After matching `vibration_ack_id`, it gives the user a 3-second pre-unmute warning plus the `500ms` jitter grace. Without acknowledgement after `3s`, it resumes alarm audio conservatively. A new valid movement event during either wait restarts only its own remaining interval.
-- When the 15-minute window ends, the station stops alarm audio and marks the alarm revision complete, regardless of energy history.
+- When the 10-minute window ends, the station stops alarm audio and marks the alarm revision complete, regardless of energy history.
 - Activity score is a compatibility `0..100` projection of latest energy.
 
 The bracelet computes energy over 200 ms windows and retains threshold candidates for reliable transport. The station revalidates every event and remains responsible for whether audio should play and when the alarm revision is complete.

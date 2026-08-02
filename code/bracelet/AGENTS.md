@@ -12,9 +12,15 @@ Read and maintain the PlantUML diagrams in `UML/` when changing bracelet firmwar
 
 ## Current State
 
-This is a PlatformIO Arduino ESP32-C3 project.
+This is a PlatformIO Arduino ESP32-C3 project. The current firmware reads the
+BMI270 at 50 Hz, calculates 200 ms energy windows, reports battery and fault
+state, hops ESP-NOW channels until station control is found, and pulses the
+vibration motor while excluding motor noise from movement energy.
 
-The current firmware is a minimal template. Do not assume BMI270 support, ESP-NOW communication, battery monitoring, power management, or activity validation exists unless the code proves it.
+ESP-NOW protocol v2 retains the newest qualifying movement event for up to 10
+seconds, retransmits it until the station acknowledges it, and confirms a
+vibration request only after the motor output actually starts. Station and
+bracelet firmware must be flashed together.
 
 ## Target Behavior
 
@@ -27,11 +33,11 @@ The bracelet should:
 - Preserve battery life where possible.
 - Stay dedicated to one station.
 
-The anti-cheat goal is practical: make the first 15 minutes after the alarm time require movement to keep the station quiet. The goal is not to prove perfect walking, GPS-like displacement, or medical-grade activity detection.
+The anti-cheat goal is practical: make the first 10 minutes after the alarm time require movement to keep the station quiet. The goal is not to prove perfect walking, GPS-like displacement, or medical-grade activity detection.
 
 ## Validation Logic Direction
 
-For v1, the bracelet reports current movement. The station owns the fixed 15-minute alarm activity window.
+For v1, the bracelet reports current movement. The station owns the fixed 10-minute alarm activity window.
 
 Future implementations should consider:
 

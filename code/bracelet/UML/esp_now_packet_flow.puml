@@ -31,7 +31,7 @@ note right of Station
 Station remains the alarm authority.
 Bracelet energy above threshold mutes alarm
 audio for 10 seconds during the station-owned
-15-minute activity window.
+10-minute activity window.
 end note
 
 @enduml

@@ -23,7 +23,7 @@ alt selected track
   Station -> Supabase : GET music_tracks selected_track_id\npublic_url from stored track row
 end
 Station -> Station : cache valid combined config
-alt alarm revision already completed or 15-minute window expired
+alt alarm revision already completed or 10-minute window expired
   Station -> Supabase : publish station_state=idle
 else pending alarm
   Station -> Supabase : publish station_state=armed
@@ -52,7 +52,7 @@ note right
   buffer filled.
 end note
 
-alt alarm time within 15-minute activity window
+alt alarm time within 10-minute activity window
   Station -> Audio : start selected stream or local fallback
   Station -> Audio : prime remote stream briefly\nbefore requesting bracelet vibration
   alt valid retained event reaches threshold 1,333,333
@@ -86,7 +86,7 @@ alt alarm time within 15-minute activity window
   end
 end
 
-Station -> Station : 15-minute activity window ends
+Station -> Station : 10-minute activity window ends
 Station -> Audio : stop stream/fallback alarm audio
 Station -> Supabase : station_state=stopped
 

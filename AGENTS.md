@@ -45,7 +45,7 @@ V1 is complete when:
 - The station streams the selected Supabase audio at alarm time.
 - The station uses a small local fallback alarm sound if Supabase music is unreachable at wake-up time.
 - The bracelet reports movement.
-- The station uses a fixed 15-minute activity window from the configured alarm time.
+- The station uses a fixed 10-minute activity window from the configured alarm time.
 
 Do not add advanced features before this v1 is working: recurring alarms, multi-user accounts, sleep cycle analysis, playlists, statistics, or production authentication.
 
@@ -56,7 +56,7 @@ Do not add advanced features before this v1 is working: recurring alarms, multi-
 - Bracelet-to-station communication uses ESP-NOW in v1, not BLE, unless physical range tests force a redesign.
 - The bracelet is dedicated to the station.
 - The alarm must not gain a normal stop or snooze button unless the user explicitly requests it.
-- The alarm has no normal stop or snooze button. The v1 alarm audio is controlled by bracelet movement only during the fixed 15-minute activity window, and the station marks the alarm complete when that window ends.
+- The alarm has no normal stop or snooze button. The v1 alarm audio is controlled by bracelet movement only during the fixed 10-minute activity window, and the station marks the alarm complete when that window ends.
 - Blocking technical faults should put the system in a visible fault state instead of starting a broken alarm flow.
 - Music streaming failure should fall back to a small local alarm sound.
 
