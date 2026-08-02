@@ -13,7 +13,8 @@ rectangle "Wake-up PWA" {
   usecase "Select local fallback sound" as SelectFallback
   usecase "Configure and activate alarm" as ConfigureAlarm
   usecase "View saved alarm time" as ViewSavedAlarm
-  usecase "Enable or disable saved alarm" as ToggleAlarm
+  usecase "Remove saved alarm before lock window" as RemoveAlarm
+  usecase "Prevent alarm edits in final hour" as LockAlarm
   usecase "View station status summary" as ViewStationStatus
   usecase "View bracelet status summary" as ViewBraceletStatus
   usecase "Open station details" as ViewStationDetails
@@ -37,7 +38,11 @@ User --> SelectTrack
 User --> SelectFallback
 User --> ConfigureAlarm
 User --> ViewSavedAlarm
-User --> ToggleAlarm
+User --> RemoveAlarm
+LockAlarm --> ConfigureAlarm
+LockAlarm --> SelectTrack
+LockAlarm --> SelectFallback
+LockAlarm --> RemoveAlarm
 User --> ViewStationStatus
 User --> ViewBraceletStatus
 User --> ViewStationDetails
@@ -55,7 +60,7 @@ SelectFallback --> StoreAlarmAudio
 ConfigureAlarm --> StoreAlarmPlan
 ConfigureAlarm --> StoreAlarmAudio
 ViewSavedAlarm --> StoreAlarmPlan
-ToggleAlarm --> StoreAlarmPlan
+RemoveAlarm --> StoreAlarmPlan
 ViewStationStatus --> ExposeStationStatus
 ViewBraceletStatus --> ExposeBraceletStatus
 ViewStationDetails --> ExposeStationStatus
@@ -70,8 +75,12 @@ ReceiveUpdates --> PublishRealtime
 note bottom of "Wake-up PWA"
   The PWA configures the system through Supabase.
   It does not trigger or stop the alarm directly.
-  Saving an alarm writes enabled=true and proposes
-  alarm slots in the next 12 hours.
+  The interface has three pages: Alarm, Music, and Devices.
+  Saving an alarm writes enabled=true and proposes alarm slots
+  in the next 12 hours, in five-minute increments.
+  From one hour before the alarm until the end of its 15-minute
+  activity window, alarm removal and edits are blocked in the PWA
+  before any Supabase write is attempted.
   Supabase realtime updates refresh changed blocks automatically.
   Station and bracelet cards show state and battery percent calculated from voltage.
   Opening a card shows error message, updated_at, and raw battery voltage.
