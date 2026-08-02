@@ -63,6 +63,12 @@ Target station link is ESP-NOW.
 
 The bracelet should send enough telemetry for the station to decide alarm state, but the station remains authoritative.
 
+ESP-NOW protocol v2 retains the newest qualifying 200 ms energy event for up to
+10 seconds and retransmits it with its age until the station acknowledges it.
+The bracelet also acknowledges a vibration request only after the motor has
+actually started. Station and bracelet firmware must be updated together; v1
+packets are not accepted.
+
 Do not introduce WiFi-heavy bracelet behavior unless explicitly requested; bracelet power consumption matters.
 
 Room-to-room ESP-NOW range is an assumption that must be physically tested. If it is not reliable enough for the target house distance, ask before changing the transport.

@@ -5,10 +5,12 @@
 #include <Preferences.h>
 #include <WiFi.h>
 #include <esp_now.h>
+#include <esp_system.h>
 #include <esp_wifi.h>
 #include <time.h>
 
 #include <driver/i2s.h>
+#include "../../esp_now_protocol.h"
 
 #if __has_include("secrets.h")
 #include "secrets.h"
@@ -32,7 +34,6 @@ static const int PIN_BCK = 25;
 static const int PIN_XSMT = 26;
 static const int PIN_BATTERY_ADC = 34;
 
-static const uint8_t PROTOCOL_VERSION = 1;
 static const uint32_t CONFIG_REFRESH_MS = 10000;
 static const uint32_t STATUS_PUBLISH_MS = 10000;
 static const uint32_t CONTROL_SEND_MS = 700;
@@ -45,11 +46,8 @@ static const int AUDIO_BUFFER_RAM_BYTES = 24 * 1024;
 static const int AUDIO_BUFFER_PSRAM_BYTES = 192 * 1024;
 static const uint32_t ARMED_BRACELET_TIMEOUT_MS = 15000;
 static const uint32_t RINGING_BRACELET_TIMEOUT_MS = 3000;
-static const uint32_t ENERGY_MUTE_MS = 10000;
 static const uint32_t ENERGY_PRE_UNMUTE_WARNING_MS = 3000;
 static const uint32_t ENERGY_UNMUTE_GRACE_MS = 500;
-static const uint32_t ENERGY_THRESHOLD = 1333333;
-static const uint16_t MIN_ENERGY_VALID_MS = 80;
 static const uint32_t REMOTE_AUDIO_PRIME_MS = 700;
 static const uint32_t REMOTE_AUDIO_LOOP_BUDGET_MS = 20;
 static const uint32_t REMOTE_AUDIO_AFTER_CONTROL_MS = 4;
@@ -128,39 +126,13 @@ struct BraceletSnapshot
   int batteryPercent = -1;
   uint32_t lastSeenMs = 0;
   uint32_t sequence = 0;
+  uint32_t bootSessionId = 0;
+  uint32_t movementEventId = 0;
+  uint32_t vibrationAckId = 0;
 };
 
-struct __attribute__((packed)) BraceletStatusPacket
-{
-  uint8_t protocolVersion;
-  uint8_t messageType;
-  uint8_t senderRole;
-  uint8_t deviceId[6];
-  uint32_t sequence;
-  uint32_t uptimeMs;
-  uint8_t braceletState;
-  uint8_t activityScore;
-  uint8_t validated;
-  uint16_t batteryVoltageMv;
-  uint8_t faultCode;
-  uint8_t flags;
-  uint32_t energy;
-  uint16_t energyValidMs;
-};
-
-struct __attribute__((packed)) StationControlPacket
-{
-  uint8_t protocolVersion;
-  uint8_t messageType;
-  uint8_t senderRole;
-  uint8_t deviceId[6];
-  uint32_t sequence;
-  uint32_t uptimeMs;
-  uint8_t stationState;
-  int32_t alarmRevision;
-  uint8_t vibrationRequest;
-  uint8_t thresholdProfile;
-};
+using EspNowProtocol::BraceletStatusPacket;
+using EspNowProtocol::StationControlPacket;
 
 static Audio audio;
 static Preferences preferences;
@@ -185,6 +157,15 @@ static bool wifiConnectionInProgress = false;
 static uint32_t lastSupabaseFailureMs = 0;
 static uint32_t energyMuteUntilMs = 0;
 static uint32_t unmuteWarningUntilMs = 0;
+static uint32_t vibrationAckDeadlineMs = 0;
+static uint32_t vibrationRequestId = 0;
+static bool vibrationRequestActive = false;
+static uint32_t acknowledgedBootSessionId = 0;
+static uint32_t acknowledgedMovementEventId = 0;
+static uint32_t processedMovementBootSessionId = 0;
+static uint32_t processedMovementEventId = 0;
+static uint32_t alarmAudioStartedMs = 0;
+static bool stationControlDirty = false;
 static uint32_t controlSequence = 0;
 static uint8_t stationMac[6] = {0};
 static int completedAlarmRevision = 0;
@@ -287,6 +268,35 @@ static bool alarmWindowHasEnded(const AlarmConfig &config)
   return config.valid && config.enabled && timeReady && time(nullptr) > config.alarmAt + ALARM_WINDOW_SECONDS;
 }
 
+static bool deadlineIsPending(uint32_t now, uint32_t deadline)
+{
+  return deadline != 0 && static_cast<int32_t>(deadline - now) > 0;
+}
+
+static bool eventIdIsNewer(uint32_t candidate, uint32_t previous)
+{
+  return candidate != 0 && (previous == 0 || static_cast<int32_t>(candidate - previous) > 0);
+}
+
+static void setVibrationRequest(bool active)
+{
+  if (active == vibrationRequestActive)
+  {
+    return;
+  }
+
+  vibrationRequestActive = active;
+  if (active)
+  {
+    vibrationRequestId++;
+    if (vibrationRequestId == 0)
+    {
+      vibrationRequestId = 1;
+    }
+  }
+  stationControlDirty = true;
+}
+
 static bool energyKeepsAudioMuted()
 {
   if (energyMuteUntilMs == 0)
@@ -295,19 +305,54 @@ static bool energyKeepsAudioMuted()
   }
 
   const uint32_t now = millis();
-  if (now < energyMuteUntilMs)
+  if (deadlineIsPending(now, energyMuteUntilMs))
   {
     unmuteWarningUntilMs = 0;
+    vibrationAckDeadlineMs = 0;
+    setVibrationRequest(false);
     return true;
   }
 
-  if (unmuteWarningUntilMs == 0)
+  if (vibrationAckDeadlineMs == 0 && unmuteWarningUntilMs == 0)
   {
-    unmuteWarningUntilMs = now + ENERGY_PRE_UNMUTE_WARNING_MS;
+    setVibrationRequest(true);
+    vibrationAckDeadlineMs = now + ENERGY_PRE_UNMUTE_WARNING_MS;
+    Serial.printf("Waiting up to %lu ms for vibration acknowledgement %lu.\n",
+                  static_cast<unsigned long>(ENERGY_PRE_UNMUTE_WARNING_MS),
+                  static_cast<unsigned long>(vibrationRequestId));
     return true;
   }
 
-  return now < unmuteWarningUntilMs || now - unmuteWarningUntilMs < ENERGY_UNMUTE_GRACE_MS;
+  if (vibrationAckDeadlineMs != 0)
+  {
+    if (bracelet.vibrationAckId == vibrationRequestId)
+    {
+      vibrationAckDeadlineMs = 0;
+      unmuteWarningUntilMs = now + ENERGY_PRE_UNMUTE_WARNING_MS;
+      Serial.printf("Vibration acknowledgement %lu received; starting pre-unmute warning.\n",
+                    static_cast<unsigned long>(vibrationRequestId));
+      return true;
+    }
+    if (deadlineIsPending(now, vibrationAckDeadlineMs))
+    {
+      return true;
+    }
+
+    vibrationAckDeadlineMs = 0;
+    energyMuteUntilMs = 0;
+    Serial.println("Vibration acknowledgement timed out; resuming alarm audio.");
+    return false;
+  }
+
+  if (deadlineIsPending(now, unmuteWarningUntilMs) ||
+      now - unmuteWarningUntilMs < ENERGY_UNMUTE_GRACE_MS)
+  {
+    return true;
+  }
+
+  energyMuteUntilMs = 0;
+  unmuteWarningUntilMs = 0;
+  return false;
 }
 
 static uint32_t energyMuteRemainingMs()
@@ -318,23 +363,19 @@ static uint32_t energyMuteRemainingMs()
     return 0;
   }
 
-  const uint32_t mutedUntilMs = max(energyMuteUntilMs, unmuteWarningUntilMs);
-  return now < mutedUntilMs ? mutedUntilMs - now : 0;
-}
-
-static void extendEnergyMute(uint32_t now)
-{
-  const uint32_t nextMuteUntilMs = now + ENERGY_MUTE_MS;
-  if (energyMuteUntilMs == 0 || now >= energyMuteUntilMs || nextMuteUntilMs - energyMuteUntilMs < ENERGY_MUTE_MS)
+  if (deadlineIsPending(now, energyMuteUntilMs))
   {
-    energyMuteUntilMs = nextMuteUntilMs;
-    unmuteWarningUntilMs = 0;
+    return energyMuteUntilMs - now;
   }
-}
-
-static bool unmuteWarningIsActive()
-{
-  return unmuteWarningUntilMs != 0 && millis() < unmuteWarningUntilMs;
+  if (deadlineIsPending(now, vibrationAckDeadlineMs))
+  {
+    return vibrationAckDeadlineMs - now;
+  }
+  if (deadlineIsPending(now, unmuteWarningUntilMs))
+  {
+    return unmuteWarningUntilMs - now + ENERGY_UNMUTE_GRACE_MS;
+  }
+  return 0;
 }
 
 static void saveCompletedAlarmRevision(int revision)
@@ -783,7 +824,7 @@ static void publishBraceletStatus()
                       ",\"bracelet_last_seen_ms\":" + lastSeen +
                       ",\"bracelet_energy\":" + String(bracelet.energy) +
                       ",\"bracelet_energy_valid_ms\":" + String(bracelet.energyValidMs) +
-                      ",\"bracelet_energy_threshold\":" + String(ENERGY_THRESHOLD) +
+                      ",\"bracelet_energy_threshold\":" + String(EspNowProtocol::NORMAL_ENERGY_THRESHOLD) +
                       ",\"energy_mute_remaining_ms\":" + String(energyMuteRemainingMs()) +
                       ",\"bracelet_vibrating\":" + String(bracelet.vibrating ? "true" : "false") + "}";
   supabaseRequest("POST", "/rest/v1/bracelet_status", body, nullptr);
@@ -926,6 +967,9 @@ static bool startAlarmAudio()
 {
   energyMuteUntilMs = 0;
   unmuteWarningUntilMs = 0;
+  vibrationAckDeadlineMs = 0;
+  alarmAudioStartedMs = millis();
+  setVibrationRequest(true);
   digitalWrite(PIN_XSMT, HIGH);
   alarmAudioMuted = false;
   audio.setVolume(map(alarmConfig.volumePercent, 0, 100, 0, 21));
@@ -950,7 +994,13 @@ static bool startAlarmAudio()
     setStationState(StationState::Ringing, ProblemCode::MusicStreamFailed, "Supabase music failed, using local fallback");
   }
 
-  return startFallbackAudio();
+  const bool started = startFallbackAudio();
+  if (!started)
+  {
+    alarmAudioStartedMs = 0;
+    setVibrationRequest(false);
+  }
+  return started;
 }
 
 static void stopAlarmAudio()
@@ -960,6 +1010,9 @@ static void stopAlarmAudio()
   stopFallbackAudio();
   energyMuteUntilMs = 0;
   unmuteWarningUntilMs = 0;
+  vibrationAckDeadlineMs = 0;
+  alarmAudioStartedMs = 0;
+  setVibrationRequest(false);
   digitalWrite(PIN_XSMT, LOW);
   alarmAudioMuted = true;
 }
@@ -1085,19 +1138,23 @@ static void sendStationControl()
   }
 
   StationControlPacket packet = {};
-  packet.protocolVersion = PROTOCOL_VERSION;
-  packet.messageType = 2;
-  packet.senderRole = 1;
-  memcpy(packet.deviceId, stationMac, sizeof(packet.deviceId));
-  packet.sequence = ++controlSequence;
-  packet.uptimeMs = millis();
+  packet.header.protocolVersion = EspNowProtocol::VERSION;
+  packet.header.messageType = EspNowProtocol::MESSAGE_STATION_CONTROL;
+  packet.header.senderRole = EspNowProtocol::SENDER_STATION;
+  memcpy(packet.header.deviceId, stationMac, sizeof(packet.header.deviceId));
+  packet.header.sequence = ++controlSequence;
+  packet.header.uptimeMs = millis();
   packet.stationState = static_cast<uint8_t>(stationState);
   packet.alarmRevision = alarmConfig.revision;
-  packet.vibrationRequest = (alarmIsActive() && (!alarmAudioMuted || unmuteWarningIsActive())) ? 1 : 0;
-  packet.thresholdProfile = 0;
+  packet.vibrationRequest = vibrationRequestActive ? 1 : 0;
+  packet.thresholdProfile = EspNowProtocol::THRESHOLD_PROFILE_NORMAL;
+  packet.acknowledgedBootSessionId = acknowledgedBootSessionId;
+  packet.acknowledgedMovementEventId = acknowledgedMovementEventId;
+  packet.vibrationRequestId = vibrationRequestActive ? vibrationRequestId : 0;
 
   const uint8_t broadcastMac[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
   esp_now_send(broadcastMac, reinterpret_cast<uint8_t *>(&packet), sizeof(packet));
+  stationControlDirty = false;
   serviceRemoteAudio(REMOTE_AUDIO_AFTER_CONTROL_MS);
 }
 
@@ -1121,7 +1178,9 @@ static void onEspNowDataReceived(const uint8_t *mac, const uint8_t *data, int le
 
   BraceletStatusPacket packet;
   memcpy(&packet, data, sizeof(packet));
-  if (packet.protocolVersion != PROTOCOL_VERSION || packet.messageType != 1 || packet.senderRole != 2)
+  if (packet.header.protocolVersion != EspNowProtocol::VERSION ||
+      packet.header.messageType != EspNowProtocol::MESSAGE_BRACELET_STATUS ||
+      packet.header.senderRole != EspNowProtocol::SENDER_BRACELET)
   {
     return;
   }
@@ -1139,11 +1198,52 @@ static void onEspNowDataReceived(const uint8_t *mac, const uint8_t *data, int le
   bracelet.vibrating = packet.flags & 0x04;
   bracelet.energy = packet.energy;
   bracelet.energyValidMs = packet.energyValidMs;
-  bracelet.sequence = packet.sequence;
-  bracelet.lastSeenMs = millis();
-  if (bracelet.energyValidMs >= MIN_ENERGY_VALID_MS && bracelet.energy >= ENERGY_THRESHOLD)
+  bracelet.sequence = packet.header.sequence;
+  bracelet.bootSessionId = packet.bootSessionId;
+  bracelet.movementEventId = packet.movementEventId;
+  bracelet.vibrationAckId = packet.vibrationAckId;
+  const uint32_t now = millis();
+  bracelet.lastSeenMs = now;
+
+  if (packet.bootSessionId != processedMovementBootSessionId)
   {
-    extendEnergyMute(millis());
+    processedMovementBootSessionId = packet.bootSessionId;
+    processedMovementEventId = 0;
+    acknowledgedBootSessionId = packet.bootSessionId;
+    acknowledgedMovementEventId = 0;
+  }
+
+  if (eventIdIsNewer(packet.movementEventId, processedMovementEventId))
+  {
+    processedMovementEventId = packet.movementEventId;
+    acknowledgedBootSessionId = packet.bootSessionId;
+    acknowledgedMovementEventId = packet.movementEventId;
+    stationControlDirty = true;
+
+    const uint32_t eventAgeMs = packet.header.uptimeMs - packet.movementEventUptimeMs;
+    const bool eventIsValid = packet.movementEventValidMs >= EspNowProtocol::MIN_ENERGY_VALID_MS &&
+                              packet.movementEventEnergy >= EspNowProtocol::NORMAL_ENERGY_THRESHOLD;
+    const bool eventOccurredAfterAudioStarted = alarmAudioStartedMs != 0 &&
+                                                now - alarmAudioStartedMs >= eventAgeMs;
+    if (alarmIsActive() && eventIsValid &&
+        eventAgeMs < EspNowProtocol::MOVEMENT_HISTORY_MS &&
+        eventOccurredAfterAudioStarted)
+    {
+      const uint32_t remainingMuteMs = EspNowProtocol::MOVEMENT_HISTORY_MS - eventAgeMs;
+      const uint32_t candidateMuteUntilMs = now + remainingMuteMs;
+      if (energyMuteUntilMs == 0 ||
+          static_cast<int32_t>(candidateMuteUntilMs - energyMuteUntilMs) > 0)
+      {
+        energyMuteUntilMs = candidateMuteUntilMs;
+      }
+      unmuteWarningUntilMs = 0;
+      vibrationAckDeadlineMs = 0;
+      setVibrationRequest(false);
+      Serial.printf("Movement event %lu recovered at age %lu ms; muting for %lu ms.\n",
+                    static_cast<unsigned long>(packet.movementEventId),
+                    static_cast<unsigned long>(eventAgeMs),
+                    static_cast<unsigned long>(remainingMuteMs));
+    }
   }
 }
 
@@ -1188,48 +1288,35 @@ static void updateAlarmState()
     }
 
     const bool braceletMissing = REQUIRE_BRACELET_READY && age > RINGING_BRACELET_TIMEOUT_MS;
-    if (braceletMissing)
-    {
-      // Missing movement telemetry is not evidence that the user is active.
-      // Keep the alarm playing and recover automatically when packets return.
-      energyMuteUntilMs = 0;
-      unmuteWarningUntilMs = 0;
-      const bool muteChanged = setAlarmAudioMuted(false);
-      const bool problemChanged = stationState != StationState::Ringing ||
-                                  problemCode != ProblemCode::BraceletMissing;
-      setStationState(StationState::Ringing,
-                      ProblemCode::BraceletMissing,
-                      "Bracelet missing; alarm continues without movement muting");
-      if (problemChanged || muteChanged)
-      {
-        sendStationControl();
-        lastControlSendMs = millis();
-        requestStationStatusPublish();
-      }
-    }
-    else if (problemCode == ProblemCode::BraceletMissing)
-    {
-      setStationState(StationState::Ringing, ProblemCode::None, "Bracelet communication restored");
-      sendStationControl();
-      lastControlSendMs = millis();
-      requestStationStatusPublish();
-    }
-
-    if (!braceletMissing && energyKeepsAudioMuted())
+    const bool keepAudioMuted = energyKeepsAudioMuted();
+    if (keepAudioMuted)
     {
       const bool muteChanged = setAlarmAudioMuted(true);
-      if (stationState != StationState::ValidatingActivity)
+      const ProblemCode nextProblem = braceletMissing ? ProblemCode::BraceletMissing : ProblemCode::None;
+      const String nextMessage = braceletMissing
+                                     ? "Bracelet missing; honoring the remaining movement mute"
+                                     : "Alarm audio muted by confirmed bracelet movement";
+      const bool stateChanged = stationState != StationState::ValidatingActivity || problemCode != nextProblem;
+      setStationState(StationState::ValidatingActivity, nextProblem, nextMessage);
+      if (stateChanged || muteChanged || stationControlDirty)
       {
-        setStationState(StationState::ValidatingActivity, ProblemCode::None, "Alarm audio muted by bracelet energy threshold");
         sendStationControl();
         lastControlSendMs = millis();
-        requestStationStatusPublish();
-      }
-      else if (muteChanged)
-      {
         requestStationStatusPublish();
       }
       return;
+    }
+
+    setVibrationRequest(true);
+    if (braceletMissing)
+    {
+      setStationState(StationState::Ringing,
+                      ProblemCode::BraceletMissing,
+                      "Bracelet missing; alarm audio remains audible");
+    }
+    else if (problemCode == ProblemCode::BraceletMissing || stationState != StationState::Ringing)
+    {
+      setStationState(StationState::Ringing, ProblemCode::None, "Bracelet communication available");
     }
 
     if (alarmWindowIsOpen(alarmConfig))
@@ -1245,7 +1332,8 @@ static void updateAlarmState()
       else if (stationState != StationState::Ringing)
       {
         setAlarmAudioMuted(false);
-        setStationState(StationState::Ringing);
+        setStationState(StationState::Ringing, braceletMissing ? ProblemCode::BraceletMissing : ProblemCode::None,
+                        braceletMissing ? "Bracelet missing; alarm audio remains audible" : "");
         sendStationControl();
         lastControlSendMs = millis();
         requestStationStatusPublish();
@@ -1253,6 +1341,11 @@ static void updateAlarmState()
       else
       {
         setAlarmAudioMuted(false);
+        if (stationControlDirty)
+        {
+          sendStationControl();
+          lastControlSendMs = millis();
+        }
       }
     }
     return;
@@ -1313,6 +1406,8 @@ void setup()
 {
   Serial.begin(115200);
   delay(200);
+
+  vibrationRequestId = esp_random();
 
   pinMode(PIN_XSMT, OUTPUT);
   digitalWrite(PIN_XSMT, HIGH);
@@ -1382,7 +1477,7 @@ void loop()
   updateAlarmState();
   flushDeferredStatusPublishes();
 
-  if (nowMs - lastControlSendMs >= CONTROL_SEND_MS)
+  if (stationControlDirty || nowMs - lastControlSendMs >= CONTROL_SEND_MS)
   {
     lastControlSendMs = nowMs;
     sendStationControl();

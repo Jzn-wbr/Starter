@@ -156,7 +156,9 @@ La station est un firmware PlatformIO Arduino pour ESP32. Elle synchronise l'heu
   \textbf{Diagramme: machine d'état v1 de la station}
 \end{center}
 
-Les états exposés par la station sont \texttt{idle}, \texttt{armed}, \texttt{ringing}, \texttt{validating\_activity}, \texttt{stopped} et \texttt{fault}. Le passage en \texttt{ringing} se produit lorsque l'heure locale configurée est atteinte et que les prérequis sont valides. Le passage en \texttt{validating\_activity} signifie que le bracelet signale du mouvement; la station coupe alors la sortie audio via \texttt{XSMT}, mais le cycle d'alarme continue.
+Les états exposés par la station sont \texttt{idle}, \texttt{armed}, \texttt{ringing}, \texttt{validating\_activity}, \texttt{stopped} et \texttt{fault}. Le passage en \texttt{ringing} se produit lorsque l'heure locale configurée est atteinte et que les prérequis sont valides. Le passage en \texttt{validating\_activity} signifie que la station a confirmé un événement de mouvement encore valable; elle coupe alors la sortie audio via \texttt{XSMT} pour la partie restante de l'intervalle de dix secondes, mais le cycle d'alarme continue.
+
+Une perte ESP-NOW supérieure à trois secondes publie \texttt{bracelet\_missing}. Elle n'annule plus une sourdine déjà accordée. À son expiration, la station demande une vibration identifiée et attend que le bracelet confirme le démarrage réel du moteur avant de laisser trois secondes à l'utilisateur. Sans confirmation après trois secondes, la musique reprend afin qu'une déconnexion ne puisse pas neutraliser le réveil.
 
 La fenêtre d'activité dure quinze minutes à partir de l'heure configurée. À la fin de cette fenêtre, la station arrête le son et marque la révision comme terminée. Il n'y a pas de transition stop ou snooze normale depuis \texttt{ringing} ou \texttt{validating\_activity}.
 
@@ -178,9 +180,9 @@ Le bracelet est un firmware PlatformIO Arduino pour ESP32-C3. Il lit le BMI270, 
 
 \subsection{Activité}
 
-Le firmware lit l'accéléromètre et le gyroscope à intervalle régulier. Il calcule un score d'activité sur 100 et maintient un booléen \texttt{motion\_present}. En v1, \texttt{validated=true} reflète le mouvement courant pour simplifier le contrat avec la station.
+Le firmware lit l'accéléromètre et le gyroscope à 50 Hz et accumule une énergie sur des fenêtres de 200 ms. Une fenêtre comportant au moins 80 ms valides et atteignant le seuil 1,333,333 devient un événement identifié. Le bracelet conserve le plus récent pendant dix secondes et le retransmet jusqu'à confirmation de la station.
 
-La logique actuelle confirme le mouvement après une courte durée continue et tolère une pause limitée afin d'éviter de couper immédiatement l'état actif sur une micro-interruption. Les seuils exacts devront rester ajustables après tests physiques.
+La station revalide l'énergie et calcule l'âge de l'événement à partir de l'uptime bracelet. Un événement reçu avec quatre secondes de retard ne donne donc que les six secondes restantes. Les mesures prises pendant la vibration du moteur et ses 450 ms de stabilisation sont ignorées.
 
 \subsection{Flux ESP-NOW}
 
@@ -190,7 +192,7 @@ La logique actuelle confirme le mouvement après une courte durée continue et t
   \textbf{Diagramme: flux des paquets ESP-NOW}
 \end{center}
 
-Les paquets commencent par une version de protocole, un type de message, un rôle émetteur, un identifiant de périphérique, une séquence et un uptime. Le bracelet diffuse \texttt{bracelet\_status}. La station peut diffuser \texttt{station\_control}; le bracelet peut alors se verrouiller temporairement sur le canal reçu.
+Les paquets du protocole ESP-NOW version 2 commencent par un type de message, un rôle émetteur, un identifiant de périphérique, une séquence et un uptime. Le bracelet diffuse \texttt{bracelet\_status} avec sa session de démarrage, son dernier événement de mouvement non confirmé et l'identifiant de vibration réellement exécuté. La station diffuse \texttt{station\_control} avec les confirmations correspondantes; le bracelet peut alors se verrouiller temporairement sur le canal reçu. Les deux cartes doivent être mises à jour ensemble car les paquets version 1 sont rejetés.
 
 Le bracelet ne contacte pas Supabase. Il ne décide pas de l'état final de l'alarme.
 

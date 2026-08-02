@@ -35,8 +35,8 @@ note right
 end note
 
 loop while armed/ringing
-  Bracelet -> Station : bracelet_status packet\nwith energy and battery_voltage_mv
-  Station -> Bracelet : station_control packet\nwith vibration_request at 700 ms cadence\nand immediately on audio state changes
+  Bracelet -> Station : protocol v2 bracelet_status\nwith energy, retained event and vibration ack
+  Station -> Bracelet : protocol v2 station_control\nwith event ack and vibration request id\nat 700 ms cadence and on state changes
 end
 
 loop every 10 seconds while connected
@@ -55,8 +55,9 @@ end note
 alt alarm time within 15-minute activity window
   Station -> Audio : start selected stream or local fallback
   Station -> Audio : prime remote stream briefly\nbefore requesting bracelet vibration
-  alt bracelet energy reaches threshold 1,333,333
-    Station -> Audio : mute output with XSMT GPIO26 for 10 s\nkeep stream/fallback running
+  alt valid retained event reaches threshold 1,333,333
+    Station -> Station : calculate event age from bracelet uptime
+    Station -> Audio : mute XSMT for 10 s minus event age\nkeep stream/fallback running
     Station -> Supabase : station_state=validating_activity
   else bracelet energy below threshold
     Station -> Audio : unmute XSMT GPIO26\ncontinue running audio
@@ -64,7 +65,12 @@ alt alarm time within 15-minute activity window
   alt mute timer active
     Station -> Audio : stay muted
   else mute timer expires
-    Station -> Bracelet : request vibration for 3 s\nwhile XSMT remains muted
+    Station -> Bracelet : request vibration with a new id\nwhile XSMT remains muted
+    alt matching vibration acknowledgement arrives
+      Station -> Station : start 3 s warning plus 500 ms guard
+    else no acknowledgement for 3 s
+      Station -> Audio : resume alarm conservatively
+    end
     alt bracelet energy reaches threshold during warning
       Station -> Audio : keep muted for a new 10 s window
     else no new threshold event
@@ -73,7 +79,7 @@ alt alarm time within 15-minute activity window
     end
   end
   alt bracelet packets missing for more than 3 seconds
-    Station -> Audio : unmute and continue alarm audio
+    Station -> Audio : honor an existing confirmed mute deadline\notherwise keep alarm audible
     Station -> Supabase : publish problem_code=bracelet_missing
   else bracelet communication restored
     Station -> Station : resume movement detection automatically

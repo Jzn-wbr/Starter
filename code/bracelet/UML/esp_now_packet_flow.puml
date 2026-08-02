@@ -7,14 +7,18 @@ participant "Station ESP32" as Station
 Bracelet -> Bracelet : Read MAC as 6-byte device_id
 Bracelet -> Bracelet : Initialize ESP-NOW in WiFi STA mode
 Bracelet -> Bracelet : Hop ESP-NOW channels 1..13\nuntil station_control is heard
-Bracelet -> Station : bracelet_status broadcast\nprotocol=1, type=1, role=bracelet\nstate, energy, valid_ms, battery_voltage_mv, fault, flags
+Bracelet -> Station : bracelet_status broadcast\nprotocol=2, type=1, role=bracelet\nstate, latest energy, retained movement event,\nbattery, fault, flags, vibration_ack_id
 
 loop every 200 ms
-  Bracelet -> Station : latest 200 ms energy window
+  Bracelet -> Bracelet : retain newest threshold event\nfor at most 10 seconds
+  Bracelet -> Station : latest energy plus unacknowledged event\nid, uptime, energy and valid_ms
 end
 
-Station -> Bracelet : station_control optional\nprotocol=1, type=2, role=station\nstation_state, revision, vibration_request, profile
+Station -> Bracelet : station_control optional\nprotocol=2, type=2, role=station\nstation_state, revision, movement acknowledgement,\nvibration_request, vibration_request_id, profile
 Bracelet -> Station : bracelet_status reply delayed by 100 ms
+Station -> Station : derive event age from bracelet uptime\nand mute for 10 seconds minus age
+Bracelet -> Bracelet : start motor for a new vibration request id
+Bracelet -> Station : force status with matching vibration_ack_id
 note right of Bracelet
   station_state values mirror the station enum:
   idle=0, armed=1, ringing=2,

@@ -14,13 +14,14 @@ armed --> ringing : local alarm time reached\nbracelet ready
 armed --> idle : 15-minute activity window expired\nor revision already completed
 armed --> fault : no valid time/config\nbracelet missing/low/fault
 
-ringing --> validating_activity : bracelet energy >= 1,333,333\nXSMT LOW for 10 s, stream continues
+ringing --> validating_activity : valid v2 movement event <= 10 s old\nXSMT LOW for remaining 10 s interval
 ringing --> stopped : 15-minute activity window ended
 ringing --> ringing : bracelet timeout > 3 s\npublish bracelet_missing, keep audio playing
 ringing --> fault : audio fault
 
-validating_activity --> ringing : 10 s energy mute expires\n3 s bracelet warning expires\nplus 500 ms jitter guard\nXSMT HIGH, same audio continues
-validating_activity --> ringing : bracelet timeout > 3 s\nunmute audio, publish bracelet_missing
+validating_activity --> ringing : mute expires, vibration is acknowledged,\n3 s warning plus 500 ms guard expires
+validating_activity --> ringing : vibration acknowledgement missing for 3 s\nresume conservatively
+validating_activity --> validating_activity : bracelet timeout > 3 s\npublish bracelet_missing, honor existing deadline
 validating_activity --> stopped : 15-minute activity window ended
 validating_activity --> fault : audio fault
 
@@ -47,11 +48,12 @@ note bottom
 There is no normal stop or snooze transition.
 Bracelet energy only mutes audio during the
 fixed 15-minute activity window by toggling XSMT.
-The station mutes for 10 seconds when a valid
-200 ms bracelet energy window reaches 1,333,333.
-If bracelet telemetry is missing for more than
-3 seconds, audio remains audible and movement
-muting resumes automatically when packets return.
+The bracelet retransmits its newest qualifying event
+for up to 10 seconds. The station subtracts event age
+from the original 10-second mute and ignores duplicates.
+Packet loss does not cancel an already confirmed mute.
+Audio resumes after a matching vibration acknowledgement,
+or conservatively after a 3-second acknowledgement timeout.
 The stream or fallback audio keeps running until
 the station marks the alarm complete when that
 window ends.

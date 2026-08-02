@@ -2,8 +2,10 @@
 #include <WiFi.h>
 #include <Wire.h>
 #include <esp_now.h>
+#include <esp_system.h>
 #include <esp_wifi.h>
 #include "SparkFun_BMI270_Arduino_Library.h"
+#include "../../esp_now_protocol.h"
 
 namespace
 {
@@ -38,11 +40,6 @@ namespace
     constexpr float BATTERY_FULL_V = 4.20F;
     constexpr uint8_t LOW_BATTERY_PERCENT = 30;
 
-    constexpr uint8_t PROTOCOL_VERSION = 1;
-    constexpr uint8_t MESSAGE_BRACELET_STATUS = 1;
-    constexpr uint8_t MESSAGE_STATION_CONTROL = 2;
-    constexpr uint8_t SENDER_STATION = 1;
-    constexpr uint8_t SENDER_BRACELET = 2;
     constexpr uint8_t BATTERY_UNKNOWN = 255;
     constexpr uint8_t ESP_NOW_MIN_CHANNEL = 1;
     constexpr uint8_t ESP_NOW_MAX_CHANNEL = 13;
@@ -91,37 +88,9 @@ namespace
         UnknownFault = 12,
     };
 
-    struct __attribute__((packed)) PacketHeader
-    {
-        uint8_t protocolVersion;
-        uint8_t messageType;
-        uint8_t senderRole;
-        uint8_t deviceId[6];
-        uint32_t sequence;
-        uint32_t uptimeMs;
-    };
-
-    struct __attribute__((packed)) BraceletStatusPacket
-    {
-        PacketHeader header;
-        uint8_t braceletState;
-        uint8_t activityScore;
-        uint8_t validated;
-        uint16_t batteryVoltageMv;
-        uint8_t faultCode;
-        uint8_t flags;
-        uint32_t energy;
-        uint16_t energyValidMs;
-    };
-
-    struct __attribute__((packed)) StationControlPacket
-    {
-        PacketHeader header;
-        uint8_t stationState;
-        uint32_t alarmRevision;
-        uint8_t vibrationRequest;
-        uint8_t thresholdProfile;
-    };
+    using EspNowProtocol::BraceletStatusPacket;
+    using EspNowProtocol::PacketHeader;
+    using EspNowProtocol::StationControlPacket;
 
     struct MotionReading
     {
@@ -160,6 +129,14 @@ namespace
     uint32_t delayedControlReplyMs = 0;
     uint32_t ignoreMotionUntilMs = 0;
     uint32_t vibrationRequestStartMs = 0;
+    uint32_t bootSessionId = 0;
+    uint32_t movementEventId = 0;
+    uint32_t movementEventUptimeMs = 0;
+    uint32_t movementEventEnergy = 0;
+    uint16_t movementEventValidMs = 0;
+    uint32_t acknowledgedMovementEventId = 0;
+    uint32_t activeVibrationRequestId = 0;
+    uint32_t vibrationAckId = 0;
 
     bool sensorReady = false;
     bool espNowReady = false;
@@ -243,6 +220,19 @@ namespace
         {
             energyTracker.lastEnergy = energyTracker.energy;
             energyTracker.lastValidMs = energyTracker.validMs;
+            if (energyTracker.lastValidMs >= EspNowProtocol::MIN_ENERGY_VALID_MS &&
+                energyTracker.lastEnergy >= EspNowProtocol::NORMAL_ENERGY_THRESHOLD)
+            {
+                movementEventId++;
+                if (movementEventId == 0)
+                {
+                    movementEventId = 1;
+                }
+                movementEventUptimeMs = energyTracker.windowStartMs + ENERGY_WINDOW_MS;
+                movementEventEnergy = energyTracker.lastEnergy;
+                movementEventValidMs = energyTracker.lastValidMs;
+                acknowledgedMovementEventId = 0;
+            }
             energyTracker.energy = 0;
             energyTracker.validMs = 0;
             energyTracker.windowStartMs += ENERGY_WINDOW_MS;
@@ -374,9 +364,9 @@ namespace
 
     void fillHeader(PacketHeader &header, uint8_t messageType)
     {
-        header.protocolVersion = PROTOCOL_VERSION;
+        header.protocolVersion = EspNowProtocol::VERSION;
         header.messageType = messageType;
-        header.senderRole = SENDER_BRACELET;
+        header.senderRole = EspNowProtocol::SENDER_BRACELET;
         memcpy(header.deviceId, deviceId, sizeof(deviceId));
         header.sequence = sequenceNumber++;
         header.uptimeMs = millis();
@@ -440,7 +430,7 @@ namespace
         forceStatusSend = false;
 
         BraceletStatusPacket packet = {};
-        fillHeader(packet.header, MESSAGE_BRACELET_STATUS);
+        fillHeader(packet.header, EspNowProtocol::MESSAGE_BRACELET_STATUS);
         packet.braceletState = static_cast<uint8_t>(currentBraceletState());
         packet.activityScore = static_cast<uint8_t>(constrain(energyTracker.lastEnergy / 40, 0UL, 100UL));
         packet.validated = 0;
@@ -449,6 +439,19 @@ namespace
         packet.flags = currentFlags();
         packet.energy = energyTracker.lastEnergy;
         packet.energyValidMs = energyTracker.lastValidMs;
+        packet.bootSessionId = bootSessionId;
+        const bool eventIsRecent = movementEventId != 0 &&
+                                   now - movementEventUptimeMs <= EspNowProtocol::MOVEMENT_HISTORY_MS;
+        const bool eventNeedsAcknowledgement = eventIsRecent &&
+                                               acknowledgedMovementEventId != movementEventId;
+        if (eventNeedsAcknowledgement)
+        {
+            packet.movementEventId = movementEventId;
+            packet.movementEventUptimeMs = movementEventUptimeMs;
+            packet.movementEventEnergy = movementEventEnergy;
+            packet.movementEventValidMs = movementEventValidMs;
+        }
+        packet.vibrationAckId = vibrationAckId;
 
         const esp_err_t result = esp_now_send(BROADCAST_PEER, reinterpret_cast<const uint8_t *>(&packet), sizeof(packet));
         if (result != ESP_OK)
@@ -467,9 +470,9 @@ namespace
 
         StationControlPacket packet = {};
         memcpy(&packet, data, sizeof(packet));
-        if (packet.header.protocolVersion != PROTOCOL_VERSION ||
-            packet.header.messageType != MESSAGE_STATION_CONTROL ||
-            packet.header.senderRole != SENDER_STATION)
+        if (packet.header.protocolVersion != EspNowProtocol::VERSION ||
+            packet.header.messageType != EspNowProtocol::MESSAGE_STATION_CONTROL ||
+            packet.header.senderRole != EspNowProtocol::SENDER_STATION)
         {
             return;
         }
@@ -477,13 +480,21 @@ namespace
         const uint32_t now = millis();
         const bool nextVibrationRequest = packet.vibrationRequest != 0;
         stationState = static_cast<StationState>(packet.stationState);
-        if (nextVibrationRequest && !stationRequestsVibration)
+        if (packet.acknowledgedBootSessionId == bootSessionId &&
+            packet.acknowledgedMovementEventId == movementEventId)
+        {
+            acknowledgedMovementEventId = movementEventId;
+        }
+        if (nextVibrationRequest &&
+            (!stationRequestsVibration || packet.vibrationRequestId != activeVibrationRequestId))
         {
             vibrationRequestStartMs = now;
+            activeVibrationRequestId = packet.vibrationRequestId;
         }
         else if (!nextVibrationRequest)
         {
             vibrationRequestStartMs = 0;
+            activeVibrationRequestId = 0;
         }
         stationRequestsVibration = nextVibrationRequest;
         lastStationControlMs = now;
@@ -498,7 +509,8 @@ namespace
         }
 
         const PacketHeader *header = reinterpret_cast<const PacketHeader *>(data);
-        if (header->protocolVersion == PROTOCOL_VERSION && header->messageType == MESSAGE_STATION_CONTROL)
+        if (header->protocolVersion == EspNowProtocol::VERSION &&
+            header->messageType == EspNowProtocol::MESSAGE_STATION_CONTROL)
         {
             handleStationControl(data, length);
         }
@@ -561,6 +573,12 @@ namespace
         Serial.print(energyTracker.lastEnergy);
         Serial.print(",energy_valid_ms:");
         Serial.print(energyTracker.lastValidMs);
+        Serial.print(",movement_event_id:");
+        Serial.print(movementEventId);
+        Serial.print(",movement_event_acknowledged:");
+        Serial.print(acknowledgedMovementEventId == movementEventId ? "true" : "false");
+        Serial.print(",vibration_ack_id:");
+        Serial.print(vibrationAckId);
         Serial.print(",vibrating:");
         Serial.print(vibrationMotorOn ? "true" : "false");
         Serial.print(",battery_percent:");
@@ -583,6 +601,11 @@ namespace
         if (shouldPulse && !vibrationMotorOn)
         {
             ignoreMotionUntilMs = now + VIBRATION_ON_MS + VIBRATION_SETTLE_MS;
+            if (activeVibrationRequestId != 0 && vibrationAckId != activeVibrationRequestId)
+            {
+                vibrationAckId = activeVibrationRequestId;
+                forceStatusSend = true;
+            }
         }
         else if (!shouldPulse && vibrationMotorOn)
         {
@@ -613,6 +636,12 @@ void setup()
 {
     Serial.begin(SERIAL_BAUD);
     delay(500);
+
+    bootSessionId = esp_random();
+    if (bootSessionId == 0)
+    {
+        bootSessionId = 1;
+    }
 
     pinMode(Pin::VIBRATION_MOTOR, OUTPUT);
     digitalWrite(Pin::VIBRATION_MOTOR, LOW);

@@ -93,10 +93,15 @@ If WiFi, NTP, Supabase, audio streaming, or bracelet communication fails:
 
 - Log a clear state.
 - Keep behavior conservative.
-- During an active 15-minute alarm window, tolerate 3 seconds without bracelet
-  packets. If the bracelet remains missing, keep alarm audio playing, publish
-  `bracelet_missing`, and resume movement detection automatically when packets
-  return. Do not mark the active alarm revision complete because of this loss.
+- During an active 15-minute alarm window, publish `bracelet_missing` after 3
+  seconds without bracelet packets. Keep audio audible when no confirmed mute
+  exists, but honor the remaining deadline of a mute already granted for a
+  confirmed movement event. Process retransmitted events only for the unelapsed
+  part of their original 10-second interval. Do not mark the active alarm
+  revision complete because of packet loss.
+- Before resuming audio after a movement mute, require a matching bracelet
+  vibration acknowledgement. Resume conservatively after 3 seconds if no
+  acknowledgement arrives; never remain silent indefinitely on a missing link.
 - Preserve the product rule that the alarm does not get an easy stop path.
 - Expose a problem state to the app/backend when that interface exists.
 

@@ -157,7 +157,8 @@ Allowed station transitions for v1:
 - `ringing -> stopped`: the 15-minute alarm activity window has ended.
 - `validating_activity -> ringing`: the 10-second energy mute and the 3-second pre-unmute bracelet warning expire before the 15-minute window has ended.
 - `validating_activity -> stopped`: the 15-minute alarm activity window has ended.
-- `validating_activity -> ringing`: bracelet packets are lost for more than `3s`; cancel the movement mute, publish `bracelet_missing`, and keep alarm audio playing until telemetry returns.
+- `validating_activity -> validating_activity`: bracelet packets are lost for more than `3s`; publish `bracelet_missing` but honor the remaining confirmed movement mute.
+- `validating_activity -> ringing`: the confirmed movement mute expires and no vibration acknowledgement or new movement event prevents audio from resuming.
 - `validating_activity -> fault`: station audio output fails.
 - `stopped -> idle`: alarm cycle is complete.
 - `fault -> idle`: user fixes the issue and station reloads a valid disabled/no-alarm state.
@@ -184,7 +185,7 @@ Music streaming failure is not a reason to skip the alarm. If the selected Supab
 
 Network or Supabase failures should be visible in station logs and in app-readable status when possible.
 
-If the bracelet disappears for more than `3s` while already ringing or validating, publish `bracelet_missing` but keep alarm audio playing for the remainder of the fixed activity window. Missing telemetry is not evidence of movement, so any active energy mute is cancelled. When packets return, clear the missing problem and resume movement detection automatically. Do not mark the alarm revision complete because of bracelet packet loss. If station audio itself fails, prefer `fault` over a fake alarm state.
+If the bracelet disappears for more than `3s` while ringing, publish `bracelet_missing` and keep alarm audio playing. If a confirmed movement mute is already active, honor its original deadline instead of cancelling it; once it expires, resume audio after the vibration acknowledgement policy below. When packets return, clear the missing problem and process any still-valid retransmitted movement event. Do not mark the alarm revision complete because of bracelet packet loss. If station audio itself fails, prefer `fault` over a fake alarm state.
 
 ## Battery Readiness Contract
 
@@ -206,7 +207,7 @@ Station battery voltage is measured on station GPIO34 through a 2:1 voltage divi
 
 Use compact binary packets. All packets start with:
 
-- `protocol_version`: `1`.
+- `protocol_version`: `2`. Version 1 packets are rejected; station and bracelet firmware must be updated together.
 - `message_type`: enum below.
 - `sender_role`: `station` or `bracelet`.
 - `device_id`: 6-byte MAC address.
@@ -232,6 +233,12 @@ Fields:
 - `flags`: bitmask for `charging`, `sensor_ready`, `vibration_active`.
 - `energy`: uint32 energy measured over the latest 200 ms window.
 - `energy_valid_ms`: uint16 measured milliseconds in that window, excluding bracelet vibration/settling.
+- `boot_session_id`: uint32 random non-zero identifier regenerated at bracelet boot.
+- `movement_event_id`: uint32 identifier of the latest unacknowledged qualifying energy window, or `0`.
+- `movement_event_uptime_ms`: bracelet uptime when that energy window ended.
+- `movement_event_energy`: uint32 energy of the retained event.
+- `movement_event_valid_ms`: valid measured milliseconds of the retained event.
+- `vibration_ack_id`: latest vibration request identifier for which the motor actually started.
 
 Default send rate:
 
@@ -241,7 +248,8 @@ Default send rate:
 Station timeout rules:
 
 - If no bracelet packet for `15s` while `armed`, publish `bracelet_missing`.
-- If no bracelet packet for `3s` while `ringing` or `validating_activity`, publish `bracelet_missing`, keep alarm audio playing, and resume movement detection when packets return.
+- If no bracelet packet for `3s` while `ringing`, publish `bracelet_missing` and keep alarm audio playing.
+- If no bracelet packet for `3s` during an existing movement mute, publish `bracelet_missing` but preserve the mute deadline. A delayed event can recover only the unelapsed part of its original 10-second interval.
 - After a Supabase HTTPS failure, the station waits `30s` before trying another Supabase request. This avoids repeated TLS allocation failures during low-memory recovery after streaming.
 
 ### `station_control`
@@ -252,9 +260,12 @@ Fields:
 - `alarm_revision`: current loaded `alarm_plan.revision`.
 - `vibration_request`: boolean; true while the station is producing audible alarm audio, and during the 3-second pre-unmute warning before audio resumes after an energy mute.
 - `threshold_profile`: `normal` for v1.
+- `acknowledged_boot_session_id`: bracelet boot session associated with the acknowledged movement event.
+- `acknowledged_movement_event_id`: latest movement event accepted or intentionally ignored by the station.
+- `vibration_request_id`: non-zero identifier regenerated whenever vibration changes from not requested to requested.
 
-Station control messages are optional in v1. The bracelet must still be able to send status without first receiving station control.
-When `vibration_request` is true, the bracelet pulses its motor instead of holding it continuously on. The current firmware default is `500ms` on every `4s`, with BMI270 energy ignored while the motor is active and during the short settling time after it stops.
+The bracelet must still be able to send status before receiving station control. Reliable movement delivery and confirmed pre-unmute vibration use the acknowledgements carried by subsequent station control packets.
+When `vibration_request` is true, the bracelet pulses its motor instead of holding it continuously on. The current firmware default is `500ms` on every `4s`, with BMI270 energy ignored while the motor is active and during the short settling time after it stops. When the motor first starts for a request, the bracelet echoes its identifier in `vibration_ack_id` and forces a status response.
 After receiving `station_control`, the bracelet delays its explicit reply by `100ms` instead of replying in the same radio slot. This reduces regular ESP-NOW collisions with station control packets.
 
 The station remains authoritative. Bracelet energy is input to the station, not a direct stop command.
@@ -265,12 +276,13 @@ Use these v1 defaults unless physical testing proves they are wrong:
 
 - The station opens a fixed `15min` activity window at the configured alarm time.
 - During that window, the station plays alarm audio when bracelet energy is below threshold or missing.
-- If a bracelet energy window reaches the station threshold, currently `1333333`, the station mutes alarm output with station `XSMT` on GPIO26 for `10s`, but does not stop the stream or complete the alarm revision.
-- When the 10s mute expires and no new energy threshold event occurred, the station keeps `XSMT` muted for a 3-second pre-unmute warning while requesting bracelet vibration. If no new threshold event occurs during that warning, the station unmutes `XSMT` and continues the already-started alarm audio. A short `500ms` unmute grace is allowed after the warning to absorb ESP-NOW timing jitter and avoid audible micro-interruptions between adjacent mute windows.
+- If a bracelet energy window reaches the station threshold, currently `1333333`, the bracelet retains it as a movement event for up to `10s` and retransmits it until acknowledged. The station revalidates the event and mutes alarm output with station `XSMT` on GPIO26 for the unelapsed part of the original 10-second interval. For example, an event received at age `4s` produces `6s` of mute.
+- Duplicate, out-of-order, pre-alarm, invalid, or at-least-10-second-old movement events do not restart the mute. A newer valid event may extend the existing deadline.
+- When the mute expires, the station keeps `XSMT` muted and requests vibration with a new identifier. After matching `vibration_ack_id`, it gives the user a 3-second pre-unmute warning plus the `500ms` jitter grace. Without acknowledgement after `3s`, it resumes alarm audio conservatively. A new valid movement event during either wait restarts only its own remaining interval.
 - When the 15-minute window ends, the station stops alarm audio and marks the alarm revision complete, regardless of energy history.
 - Activity score is a compatibility `0..100` projection of latest energy.
 
-The bracelet computes only energy over 200 ms windows. It does not validate activity. The station decides whether audio should play and when the alarm revision is complete.
+The bracelet computes energy over 200 ms windows and retains threshold candidates for reliable transport. The station revalidates every event and remains responsible for whether audio should play and when the alarm revision is complete.
 
 ## Fallback Sound Contract
 

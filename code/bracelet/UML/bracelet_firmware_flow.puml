@@ -35,8 +35,13 @@ repeat
     :Retry BMI270 initialization every 2 seconds;
   endif
 
+  if (completed window reaches threshold?) then (yes)
+    :Create a version 2 movement event\nwith id, uptime, energy and valid ms;
+    :Retain it for at most 10 seconds\nuntil station acknowledgement;
+  endif
+
   if (station_control received?) then (yes)
-    :Store station state and vibration_request flag;
+    :Store station state, movement acknowledgement,\nvibration_request and request id;
     :Lock current ESP-NOW channel temporarily;
     :Schedule bracelet_status reply\n100 ms later;
   endif
@@ -44,6 +49,7 @@ repeat
   if (vibration_request?) then (yes)
     :Start pulse phase when request turns on;
     :Pulse vibration motor\n500 ms every 4 seconds;
+    :Acknowledge the request id only after\nthe motor output turns on;
     :Ignore BMI270 energy while motor is on\nand during 450 ms settling;
   else (no)
     :Keep vibration motor off;
@@ -57,7 +63,7 @@ repeat
     :Report state=ready;
   endif
 
-  :Send bracelet_status every 200 ms\nwith energy and valid measured ms;
+  :Send protocol v2 bracelet_status every 200 ms\nwith latest energy, retained movement event\nand vibration acknowledgement;
 repeat while (device powered)
 
 @enduml
