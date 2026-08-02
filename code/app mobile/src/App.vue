@@ -779,91 +779,90 @@ function formatUpdatedAt(value?: string) {
 
     <template v-else>
       <section v-if="activeTab === 'alarm'" class="page alarm-page">
-        <div class="time-picker" :class="{ locked: alarmIsLocked }" aria-label="Choisir l’heure du réveil">
-          <div class="selection-glow"></div>
-          <div
-            ref="hourWheel"
-            class="wheel-column"
-            role="listbox"
-            aria-label="Heures"
-            tabindex="0"
-            @scroll.passive="handleWheelScroll('hour')"
-          >
-            <button
-              v-for="group in hourGroups"
-              :key="group.key"
-              data-wheel-item
-              type="button"
-              role="option"
-              :aria-selected="selectedHourGroup?.key === group.key"
-              :disabled="alarmIsLocked"
-              @click="selectHour(group)"
+        <template v-if="!showAlarmCard">
+          <div class="time-picker" aria-label="Choisir l’heure du réveil">
+            <div class="selection-glow"></div>
+            <div
+              ref="hourWheel"
+              class="wheel-column"
+              role="listbox"
+              aria-label="Heures"
+              tabindex="0"
+              @scroll.passive="handleWheelScroll('hour')"
             >
-              <span>{{ group.hour }}</span>
-            </button>
-          </div>
-          <span class="time-separator">:</span>
-          <div
-            ref="minuteWheel"
-            class="wheel-column"
-            role="listbox"
-            aria-label="Minutes"
-            tabindex="0"
-            @scroll.passive="handleWheelScroll('minute')"
-          >
-            <button
-              v-for="slot in selectedHourGroup?.slots ?? []"
-              :key="slot.sqlTime"
-              data-wheel-item
-              type="button"
-              role="option"
-              :aria-selected="selectedSlot?.sqlTime === slot.sqlTime"
-              :disabled="alarmIsLocked"
-              @click="selectSlot(slot)"
+              <button
+                v-for="group in hourGroups"
+                :key="group.key"
+                data-wheel-item
+                type="button"
+                role="option"
+                :aria-selected="selectedHourGroup?.key === group.key"
+                @click="selectHour(group)"
+              >
+                <span>{{ group.hour }}</span>
+              </button>
+            </div>
+            <span class="time-separator">:</span>
+            <div
+              ref="minuteWheel"
+              class="wheel-column"
+              role="listbox"
+              aria-label="Minutes"
+              tabindex="0"
+              @scroll.passive="handleWheelScroll('minute')"
             >
-              <span>{{ slot.shortLabel.slice(-2) }}</span>
-            </button>
+              <button
+                v-for="slot in selectedHourGroup?.slots ?? []"
+                :key="slot.sqlTime"
+                data-wheel-item
+                type="button"
+                role="option"
+                :aria-selected="selectedSlot?.sqlTime === slot.sqlTime"
+                @click="selectSlot(slot)"
+              >
+                <span>{{ slot.shortLabel.slice(-2) }}</span>
+              </button>
+            </div>
           </div>
-          <LockKeyhole v-if="alarmIsLocked" class="picker-lock" :size="18" />
-        </div>
 
-        <section class="selected-sound-card">
-          <div class="cover-art large" :class="coverClass(selectedTrack?.id)">
-            <Music :size="25" />
-          </div>
-          <button class="sound-copy" type="button" :disabled="alarmIsLocked" @click="activeTab = 'music'">
-            <small>Son du réveil</small>
-            <strong>{{ selectedAudioLabel }}</strong>
-          </button>
+          <section class="selected-sound-card">
+            <div class="cover-art large" :class="coverClass(selectedTrack?.id)">
+              <Music :size="25" />
+            </div>
+            <button class="sound-copy" type="button" @click="activeTab = 'music'">
+              <small>Son du réveil</small>
+              <strong>{{ selectedAudioLabel }}</strong>
+            </button>
+            <button
+              class="round-button"
+              type="button"
+              :disabled="!selectedTrack"
+              :aria-label="playingTrackId === selectedTrack?.id ? 'Mettre en pause' : 'Écouter la musique'"
+              @click="selectedTrack && previewTrack(selectedTrack)"
+            >
+              <Pause v-if="playingTrackId === selectedTrack?.id" :size="19" />
+              <Play v-else :size="19" />
+            </button>
+            <ChevronRight class="sound-chevron" :size="19" />
+          </section>
+
+          <label class="volume-card">
+            <span><Volume2 :size="18" /> Volume</span>
+            <strong>{{ draftVolume }} %</strong>
+            <input v-model.number="draftVolume" type="range" min="0" max="100" step="5" />
+          </label>
+
           <button
-            class="round-button"
+            class="primary-action"
             type="button"
-            :disabled="!selectedTrack"
-            :aria-label="playingTrackId === selectedTrack?.id ? 'Mettre en pause' : 'Écouter la musique'"
-            @click="selectedTrack && previewTrack(selectedTrack)"
+            :disabled="saving || !canUseSupabase || !audioSelection"
+            @click="saveAlarm"
           >
-            <Pause v-if="playingTrackId === selectedTrack?.id" :size="19" />
-            <Play v-else :size="19" />
+            <Loader2 v-if="saving" class="spin" :size="19" />
+            <Bell v-else :size="19" />
+            Fixer l’alarme
           </button>
-          <ChevronRight class="sound-chevron" :size="19" />
-        </section>
-
-        <label class="volume-card" :class="{ disabled: alarmIsLocked }">
-          <span><Volume2 :size="18" /> Volume</span>
-          <strong>{{ draftVolume }} %</strong>
-          <input v-model.number="draftVolume" type="range" min="0" max="100" step="5" :disabled="alarmIsLocked" />
-        </label>
-
-        <button
-          class="primary-action"
-          type="button"
-          :disabled="saving || alarmIsLocked || !canUseSupabase || !audioSelection"
-          @click="saveAlarm"
-        >
-          <Loader2 v-if="saving" class="spin" :size="19" />
-          <Bell v-else :size="19" />
-          {{ showAlarmCard ? 'Mettre à jour l’alarme' : 'Fixer l’alarme' }}
-        </button>
+        </template>
 
         <section v-if="showAlarmCard" class="fixed-alarm-card" :class="{ locked: alarmIsLocked }">
           <div class="alarm-card-topline">

@@ -81,6 +81,8 @@ note bottom of "Wake-up PWA"
   From one hour before the alarm until the end of its 15-minute
   activity window, alarm removal and edits are blocked in the PWA
   before any Supabase write is attempted.
+  While one alarm is active, its summary card replaces the alarm
+  creation controls. The controls return after removal or expiry.
   Supabase realtime updates refresh changed blocks automatically.
   Station and bracelet cards show state and battery percent calculated from voltage.
   Opening a card shows error message, updated_at, and raw battery voltage.

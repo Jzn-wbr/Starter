@@ -1,17 +1,32 @@
 {
   "name": "Starter",
   "short_name": "Starter",
-  "description": "Configuration du réveil actif personnel.",
-  "start_url": "/",
+  "description": "Configuration du réveil personnel Starter.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#f7f4ee",
-  "theme_color": "#f7f4ee",
+  "orientation": "portrait-primary",
+  "background_color": "#080B14",
+  "theme_color": "#080B14",
   "icons": [
     {
-      "src": "/starter-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
