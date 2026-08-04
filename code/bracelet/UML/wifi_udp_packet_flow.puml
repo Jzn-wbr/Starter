@@ -1,0 +1,50 @@
+@startuml
+title Bracelet / Station WiFi UDP Packet Flow
+
+participant "Bracelet ESP32-C3" as Bracelet
+participant "Home WiFi router" as Router
+participant "Station ESP32" as Station
+
+Bracelet -> Router : associate using local secrets
+Station -> Router : associate using local secrets
+Station -> Bracelet : subnet broadcast station_control protocol v3 on UDP 42100
+
+alt first valid exchange
+  Bracelet -> Bracelet : persist station MAC in NVS
+  Bracelet -> Station : immediate unicast bracelet_status
+  Station -> Station : persist bracelet MAC in NVS
+else already paired
+  Bracelet -> Bracelet : reject foreign station MACs
+  Station -> Station : reject foreign bracelet MACs
+end
+
+loop idle / armed
+  Station -> Bracelet : control or announcement every 5 seconds
+  Bracelet -> Station : status every 10 seconds
+end
+
+loop ringing / validating_activity
+  Station -> Bracelet : unicast control every 700 ms
+  Station -> Bracelet : periodic broadcast for rediscovery
+  Bracelet -> Station : status every 200 ms
+  Bracelet -> Station : qualifying movement immediately
+end
+
+Station -> Station : validate retained event and age
+Station -> Station : mute for remaining part of original 10 seconds
+Station -> Bracelet : vibration request with new id
+Bracelet -> Bracelet : start vibration pulse
+Bracelet -> Station : immediate status with vibration_ack_id
+
+note right of Station
+  UDP loss is handled by retained events,
+  identifiers, retransmission and acknowledgements.
+  The station remains the alarm authority.
+end note
+
+note bottom
+  Pairing survives reboot. Replacing either device requires
+  erasing NVS/flash before reflashing both intended peers.
+end note
+
+@enduml

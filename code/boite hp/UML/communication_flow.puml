@@ -5,7 +5,7 @@ participant "Station firmware" as Station
 participant "Configured Wi-Fi networks" as Wifi
 database "Supabase REST" as Supabase
 participant "NTP" as Ntp
-participant "ESP-NOW bracelet" as Bracelet
+participant "WiFi UDP bracelet" as Bracelet
 participant "Audio output\nPCM5102A/PAM8403" as Audio
 
 Station -> Wifi : try primary Wi-Fi network
@@ -34,9 +34,19 @@ note right
   alarm_plan revision has been loaded.
 end note
 
-loop while armed/ringing
-  Bracelet -> Station : protocol v2 bracelet_status\nwith energy, retained event and vibration ack
-  Station -> Bracelet : protocol v2 station_control\nwith event ack and vibration request id\nat 700 ms cadence and on state changes
+Station -> Bracelet : protocol v3 station_control announcement\nUDP subnet broadcast on port 42100
+Bracelet -> Station : protocol v3 bracelet_status unicast
+Station -> Station : persist first valid bracelet MAC in NVS
+Bracelet -> Bracelet : persist first valid station MAC in NVS
+
+loop while idle/armed
+  Station -> Bracelet : control or announcement every 5 seconds
+  Bracelet -> Station : status every 10 seconds
+end
+
+loop while ringing/validating_activity
+  Bracelet -> Station : status every 200 ms plus immediate movement events
+  Station -> Bracelet : control every 700 ms and on state changes
 end
 
 loop every 10 seconds while connected
@@ -84,6 +94,18 @@ alt alarm time within 10-minute activity window
   else bracelet communication restored
     Station -> Station : resume movement detection automatically
   end
+end
+
+alt home WiFi unavailable
+  Station -> Station : stop UDP and clear learned bracelet IP
+  Bracelet -> Bracelet : keep sensor and retained event processing active
+  note right
+    Before alarm, bracelet absence becomes blocking after 25 seconds.
+    During alarm, the existing conservative 3-second policy applies.
+  end note
+else WiFi restored
+  Station -> Bracelet : broadcast announcement for rediscovery
+  Bracelet -> Station : resume unicast without losing the NVS pairing
 end
 
 Station -> Station : 10-minute activity window ends

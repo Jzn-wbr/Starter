@@ -4,13 +4,13 @@
 #include <HTTPClient.h>
 #include <Preferences.h>
 #include <WiFi.h>
-#include <esp_now.h>
+#include <WiFiUdp.h>
 #include <esp_system.h>
 #include <esp_wifi.h>
 #include <time.h>
 
 #include <driver/i2s.h>
-#include "../../esp_now_protocol.h"
+#include "../../bracelet_station_protocol.h"
 
 #if __has_include("secrets.h")
 #include "secrets.h"
@@ -36,7 +36,10 @@ static const int PIN_BATTERY_ADC = 34;
 
 static const uint32_t CONFIG_REFRESH_MS = 10000;
 static const uint32_t STATUS_PUBLISH_MS = 10000;
-static const uint32_t CONTROL_SEND_MS = 700;
+static const uint32_t ACTIVE_CONTROL_SEND_MS = 700;
+static const uint32_t INACTIVE_CONTROL_SEND_MS = 5000;
+static const uint32_t UDP_ANNOUNCEMENT_MS = 5000;
+static const uint8_t MAX_UDP_PACKETS_PER_LOOP = 8;
 static const uint32_t WIFI_RETRY_MS = 15000;
 static const uint32_t WIFI_CONNECT_TIMEOUT_MS = 10000;
 static const uint32_t SUPABASE_FAILURE_BACKOFF_MS = 30000;
@@ -44,7 +47,7 @@ static const uint32_t SUPABASE_FAILURE_BACKOFF_MS = 30000;
 // This remains comfortably above the audio library's MP3/AAC minimum buffer.
 static const int AUDIO_BUFFER_RAM_BYTES = 24 * 1024;
 static const int AUDIO_BUFFER_PSRAM_BYTES = 192 * 1024;
-static const uint32_t ARMED_BRACELET_TIMEOUT_MS = 15000;
+static const uint32_t ARMED_BRACELET_TIMEOUT_MS = 25000;
 static const uint32_t RINGING_BRACELET_TIMEOUT_MS = 3000;
 static const uint32_t ENERGY_PRE_UNMUTE_WARNING_MS = 3000;
 static const uint32_t ENERGY_UNMUTE_GRACE_MS = 500;
@@ -131,11 +134,12 @@ struct BraceletSnapshot
   uint32_t vibrationAckId = 0;
 };
 
-using EspNowProtocol::BraceletStatusPacket;
-using EspNowProtocol::StationControlPacket;
+using BraceletStationProtocol::BraceletStatusPacket;
+using BraceletStationProtocol::StationControlPacket;
 
 static Audio audio;
 static Preferences preferences;
+static WiFiUDP udp;
 static AlarmConfig alarmConfig;
 static BraceletSnapshot bracelet;
 static StationState stationState = StationState::Idle;
@@ -144,12 +148,16 @@ static String problemMessage = "";
 static bool remoteAudioActive = false;
 static bool fallbackAudioActive = false;
 static bool alarmAudioMuted = false;
-static bool espNowReady = false;
+static bool udpReady = false;
+static bool braceletPaired = false;
+static bool braceletIpKnown = false;
 static bool timeReady = false;
 static float stationBatteryVoltage = -1.0F;
 static uint32_t lastConfigRefreshMs = 0;
 static uint32_t lastStatusPublishMs = 0;
 static uint32_t lastControlSendMs = 0;
+static uint32_t lastUdpAnnouncementMs = 0;
+static uint32_t lastBraceletUdpDebugMs = 0;
 static uint32_t lastWifiCycleFailureMs = 0;
 static uint32_t wifiConnectStartedMs = 0;
 static uint8_t wifiNetworkIndex = 0;
@@ -168,6 +176,8 @@ static uint32_t alarmAudioStartedMs = 0;
 static bool stationControlDirty = false;
 static uint32_t controlSequence = 0;
 static uint8_t stationMac[6] = {0};
+static uint8_t pairedBraceletId[6] = {0};
+static IPAddress braceletIp;
 static int completedAlarmRevision = 0;
 static bool pendingStationStatusPublish = false;
 static bool pendingBraceletStatusPublish = false;
@@ -405,9 +415,11 @@ static StationState inactiveStateForAlarm(const AlarmConfig &config)
 
 static void setStationState(StationState state, ProblemCode code = ProblemCode::None, const String &message = "")
 {
-  if (stationState != state || problemCode != code || problemMessage != message)
+  const bool changed = stationState != state || problemCode != code || problemMessage != message;
+  if (changed)
   {
     Serial.printf("Station state: %s, problem: %s, %s\n", stateName(state), problemName(code), message.c_str());
+    stationControlDirty = true;
   }
 
   stationState = state;
@@ -824,7 +836,7 @@ static void publishBraceletStatus()
                       ",\"bracelet_last_seen_ms\":" + lastSeen +
                       ",\"bracelet_energy\":" + String(bracelet.energy) +
                       ",\"bracelet_energy_valid_ms\":" + String(bracelet.energyValidMs) +
-                      ",\"bracelet_energy_threshold\":" + String(EspNowProtocol::NORMAL_ENERGY_THRESHOLD) +
+                      ",\"bracelet_energy_threshold\":" + String(BraceletStationProtocol::NORMAL_ENERGY_THRESHOLD) +
                       ",\"energy_mute_remaining_ms\":" + String(energyMuteRemainingMs()) +
                       ",\"bracelet_vibrating\":" + String(bracelet.vibrating ? "true" : "false") + "}";
   supabaseRequest("POST", "/rest/v1/bracelet_status", body, nullptr);
@@ -1132,28 +1144,60 @@ static void refreshConfig()
 
 static void sendStationControl()
 {
-  if (!espNowReady)
+  if (!udpReady)
   {
     return;
   }
 
   StationControlPacket packet = {};
-  packet.header.protocolVersion = EspNowProtocol::VERSION;
-  packet.header.messageType = EspNowProtocol::MESSAGE_STATION_CONTROL;
-  packet.header.senderRole = EspNowProtocol::SENDER_STATION;
+  packet.header.magic = BraceletStationProtocol::MAGIC;
+  packet.header.protocolVersion = BraceletStationProtocol::VERSION;
+  packet.header.messageType = BraceletStationProtocol::MESSAGE_STATION_CONTROL;
+  packet.header.senderRole = BraceletStationProtocol::SENDER_STATION;
   memcpy(packet.header.deviceId, stationMac, sizeof(packet.header.deviceId));
   packet.header.sequence = ++controlSequence;
   packet.header.uptimeMs = millis();
   packet.stationState = static_cast<uint8_t>(stationState);
   packet.alarmRevision = alarmConfig.revision;
   packet.vibrationRequest = vibrationRequestActive ? 1 : 0;
-  packet.thresholdProfile = EspNowProtocol::THRESHOLD_PROFILE_NORMAL;
+  packet.thresholdProfile = BraceletStationProtocol::THRESHOLD_PROFILE_NORMAL;
   packet.acknowledgedBootSessionId = acknowledgedBootSessionId;
   packet.acknowledgedMovementEventId = acknowledgedMovementEventId;
   packet.vibrationRequestId = vibrationRequestActive ? vibrationRequestId : 0;
 
-  const uint8_t broadcastMac[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-  esp_now_send(broadcastMac, reinterpret_cast<uint8_t *>(&packet), sizeof(packet));
+  const uint32_t now = millis();
+  const bool announcementDue = lastUdpAnnouncementMs == 0 ||
+                               now - lastUdpAnnouncementMs >= UDP_ANNOUNCEMENT_MS;
+
+  auto sendPacket = [&packet](const IPAddress &destination) {
+    if (!udp.beginPacket(destination, BraceletStationProtocol::UDP_PORT) ||
+        udp.write(reinterpret_cast<const uint8_t *>(&packet), sizeof(packet)) != sizeof(packet) ||
+        !udp.endPacket())
+    {
+      Serial.printf("udp_send_error:station_control:%s\n", destination.toString().c_str());
+      return false;
+    }
+    return true;
+  };
+
+  if (braceletIpKnown)
+  {
+    sendPacket(braceletIp);
+  }
+
+  if (stationControlDirty || announcementDue || !braceletIpKnown)
+  {
+    const IPAddress localIp = WiFi.localIP();
+    const IPAddress subnet = WiFi.subnetMask();
+    IPAddress broadcastIp;
+    for (uint8_t index = 0; index < 4; ++index)
+    {
+      broadcastIp[index] = static_cast<uint8_t>((localIp[index] & subnet[index]) | (~subnet[index] & 0xff));
+    }
+    sendPacket(broadcastIp);
+    lastUdpAnnouncementMs = now;
+  }
+
   stationControlDirty = false;
   serviceRemoteAudio(REMOTE_AUDIO_AFTER_CONTROL_MS);
 }
@@ -1167,24 +1211,39 @@ static ProblemCode packetProblemToCode(uint8_t value)
   return ProblemCode::UnknownFault;
 }
 
-static void onEspNowDataReceived(const uint8_t *mac, const uint8_t *data, int len)
+static bool deviceIdMatches(const uint8_t *left, const uint8_t *right)
 {
-  (void)mac;
+  return memcmp(left, right, 6) == 0;
+}
 
-  if (len != sizeof(BraceletStatusPacket))
+static void loadPairedBracelet()
+{
+  preferences.begin("udp-link", true);
+  if (preferences.getBytesLength("braceletId") == sizeof(pairedBraceletId))
   {
-    return;
+    preferences.getBytes("braceletId", pairedBraceletId, sizeof(pairedBraceletId));
+    braceletPaired = true;
   }
+  preferences.end();
+  Serial.println(braceletPaired ? "udp_pairing:bracelet_loaded" : "udp_pairing:waiting_for_bracelet");
+}
 
-  BraceletStatusPacket packet;
-  memcpy(&packet, data, sizeof(packet));
-  if (packet.header.protocolVersion != EspNowProtocol::VERSION ||
-      packet.header.messageType != EspNowProtocol::MESSAGE_BRACELET_STATUS ||
-      packet.header.senderRole != EspNowProtocol::SENDER_BRACELET)
-  {
-    return;
-  }
+static void savePairedBracelet(const uint8_t *braceletId)
+{
+  memcpy(pairedBraceletId, braceletId, sizeof(pairedBraceletId));
+  preferences.begin("udp-link", false);
+  preferences.putBytes("braceletId", pairedBraceletId, sizeof(pairedBraceletId));
+  preferences.end();
+  braceletPaired = true;
+  Serial.printf("udp_pairing:bracelet_saved:%02X:%02X:%02X:%02X:%02X:%02X\n",
+                pairedBraceletId[0], pairedBraceletId[1], pairedBraceletId[2],
+                pairedBraceletId[3], pairedBraceletId[4], pairedBraceletId[5]);
+}
 
+static void handleBraceletStatus(const BraceletStatusPacket &packet, const IPAddress &remoteIp)
+{
+  const uint32_t previousBootSessionId = bracelet.bootSessionId;
+  const uint32_t previousSequence = bracelet.sequence;
   bracelet.state = packet.braceletState <= static_cast<uint8_t>(BraceletState::Fault)
                        ? static_cast<BraceletState>(packet.braceletState)
                        : BraceletState::Unknown;
@@ -1204,6 +1263,26 @@ static void onEspNowDataReceived(const uint8_t *mac, const uint8_t *data, int le
   bracelet.vibrationAckId = packet.vibrationAckId;
   const uint32_t now = millis();
   bracelet.lastSeenMs = now;
+  braceletIp = remoteIp;
+  braceletIpKnown = true;
+
+  if (now - lastBraceletUdpDebugMs >= 5000)
+  {
+    lastBraceletUdpDebugMs = now;
+    Serial.printf("udp_rx_bracelet:seq=%lu,battery_mv=%u,battery_v=%.3f,size=%u,src=%s\n",
+                  static_cast<unsigned long>(packet.header.sequence),
+                  static_cast<unsigned int>(packet.batteryVoltageMv),
+                  bracelet.batteryVoltage,
+                  static_cast<unsigned int>(sizeof(packet)),
+                  remoteIp.toString().c_str());
+  }
+
+  if (previousBootSessionId == packet.bootSessionId && previousSequence != 0 &&
+      static_cast<int32_t>(packet.header.sequence - previousSequence) > 1)
+  {
+    Serial.printf("udp_bracelet_gap:%lu\n",
+                  static_cast<unsigned long>(packet.header.sequence - previousSequence - 1));
+  }
 
   if (packet.bootSessionId != processedMovementBootSessionId)
   {
@@ -1221,15 +1300,15 @@ static void onEspNowDataReceived(const uint8_t *mac, const uint8_t *data, int le
     stationControlDirty = true;
 
     const uint32_t eventAgeMs = packet.header.uptimeMs - packet.movementEventUptimeMs;
-    const bool eventIsValid = packet.movementEventValidMs >= EspNowProtocol::MIN_ENERGY_VALID_MS &&
-                              packet.movementEventEnergy >= EspNowProtocol::NORMAL_ENERGY_THRESHOLD;
+    const bool eventIsValid = packet.movementEventValidMs >= BraceletStationProtocol::MIN_ENERGY_VALID_MS &&
+                              packet.movementEventEnergy >= BraceletStationProtocol::NORMAL_ENERGY_THRESHOLD;
     const bool eventOccurredAfterAudioStarted = alarmAudioStartedMs != 0 &&
                                                 now - alarmAudioStartedMs >= eventAgeMs;
     if (alarmIsActive() && eventIsValid &&
-        eventAgeMs < EspNowProtocol::MOVEMENT_HISTORY_MS &&
+        eventAgeMs < BraceletStationProtocol::MOVEMENT_HISTORY_MS &&
         eventOccurredAfterAudioStarted)
     {
-      const uint32_t remainingMuteMs = EspNowProtocol::MOVEMENT_HISTORY_MS - eventAgeMs;
+      const uint32_t remainingMuteMs = BraceletStationProtocol::MOVEMENT_HISTORY_MS - eventAgeMs;
       const uint32_t candidateMuteUntilMs = now + remainingMuteMs;
       if (energyMuteUntilMs == 0 ||
           static_cast<int32_t>(candidateMuteUntilMs - energyMuteUntilMs) > 0)
@@ -1247,25 +1326,76 @@ static void onEspNowDataReceived(const uint8_t *mac, const uint8_t *data, int le
   }
 }
 
-static void setupEspNow()
+static void ensureUdp()
 {
-  if (esp_now_init() != ESP_OK)
+  if (WiFi.status() != WL_CONNECTED)
   {
-    Serial.println("ESP-NOW init failed.");
+    if (udpReady)
+    {
+      udp.stop();
+      udpReady = false;
+      braceletIpKnown = false;
+      Serial.println("udp_status:stopped_wifi_disconnected");
+    }
     return;
   }
 
-  esp_now_register_recv_cb(onEspNowDataReceived);
+  if (udpReady)
+  {
+    return;
+  }
 
-  const uint8_t broadcastMac[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-  esp_now_peer_info_t peer = {};
-  memcpy(peer.peer_addr, broadcastMac, sizeof(broadcastMac));
-  peer.channel = 0;
-  peer.encrypt = false;
-  esp_now_add_peer(&peer);
+  udpReady = udp.begin(BraceletStationProtocol::UDP_PORT) == 1;
+  Serial.printf("udp_status:%s,ip:%s\n", udpReady ? "ready" : "bind_failed",
+                WiFi.localIP().toString().c_str());
+  if (udpReady)
+  {
+    stationControlDirty = true;
+    lastUdpAnnouncementMs = 0;
+  }
+}
 
-  espNowReady = true;
-  Serial.println("ESP-NOW receiver ready.");
+static void serviceBraceletUdp()
+{
+  ensureUdp();
+  if (!udpReady)
+  {
+    return;
+  }
+
+  for (uint8_t handled = 0; handled < MAX_UDP_PACKETS_PER_LOOP; ++handled)
+  {
+    const int packetSize = udp.parsePacket();
+    if (packetSize <= 0)
+    {
+      break;
+    }
+
+    const IPAddress remoteIp = udp.remoteIP();
+    BraceletStatusPacket packet = {};
+    const int bytesRead = udp.read(reinterpret_cast<uint8_t *>(&packet), sizeof(packet));
+    if (packetSize != static_cast<int>(sizeof(packet)) || bytesRead != static_cast<int>(sizeof(packet)) ||
+        packet.header.magic != BraceletStationProtocol::MAGIC ||
+        packet.header.protocolVersion != BraceletStationProtocol::VERSION ||
+        packet.header.messageType != BraceletStationProtocol::MESSAGE_BRACELET_STATUS ||
+        packet.header.senderRole != BraceletStationProtocol::SENDER_BRACELET)
+    {
+      Serial.println("udp_packet_rejected:invalid_bracelet_status");
+      continue;
+    }
+
+    if (!braceletPaired)
+    {
+      savePairedBracelet(packet.header.deviceId);
+    }
+    else if (!deviceIdMatches(packet.header.deviceId, pairedBraceletId))
+    {
+      Serial.println("udp_packet_rejected:foreign_bracelet");
+      continue;
+    }
+
+    handleBraceletStatus(packet, remoteIp);
+  }
 }
 
 static void updateAlarmState()
@@ -1417,6 +1547,7 @@ void setup()
   WiFi.mode(WIFI_STA);
   WiFi.macAddress(stationMac);
   esp_wifi_set_ps(WIFI_PS_NONE);
+  loadPairedBracelet();
 
   audio.setBufsize(AUDIO_BUFFER_RAM_BYTES, AUDIO_BUFFER_PSRAM_BYTES);
   audio.setPinout(PIN_BCK, PIN_LRCK, PIN_DIN);
@@ -1424,7 +1555,7 @@ void setup()
   audio.setVolume(17);
 
   ensureWifi();
-  setupEspNow();
+  ensureUdp();
   loadCompletedAlarmRevision();
 
   if (loadCachedAlarm(alarmConfig))
@@ -1446,6 +1577,7 @@ void loop()
   }
 
   const uint32_t nowMs = millis();
+  serviceBraceletUdp();
   if (!remoteAudioActive)
   {
     stationBatteryVoltage = readStationBatteryVoltage();
@@ -1477,7 +1609,8 @@ void loop()
   updateAlarmState();
   flushDeferredStatusPublishes();
 
-  if (stationControlDirty || nowMs - lastControlSendMs >= CONTROL_SEND_MS)
+  const uint32_t controlSendPeriod = alarmIsActive() ? ACTIVE_CONTROL_SEND_MS : INACTIVE_CONTROL_SEND_MS;
+  if (stationControlDirty || nowMs - lastControlSendMs >= controlSendPeriod)
   {
     lastControlSendMs = nowMs;
     sendStationControl();

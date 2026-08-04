@@ -6,7 +6,7 @@ This folder contains the bracelet firmware. The bracelet reports current user mo
 
 The bracelet does not own alarm state. The station decides whether alarm audio plays and when the fixed alarm window is complete.
 
-Read `../../ARCHITECTURE.md` before changing bracelet telemetry, activity validation thresholds, battery readiness, ESP-NOW packet format, or station communication.
+Read `../../ARCHITECTURE.md` before changing bracelet telemetry, activity validation thresholds, battery readiness, WiFi UDP packet format, or station communication.
 
 Read and maintain the PlantUML diagrams in `UML/` when changing bracelet firmware architecture. These diagrams are for human understanding and must evolve with the code.
 
@@ -14,13 +14,14 @@ Read and maintain the PlantUML diagrams in `UML/` when changing bracelet firmwar
 
 This is a PlatformIO Arduino ESP32-C3 project. The current firmware reads the
 BMI270 at 50 Hz, calculates 200 ms energy windows, reports battery and fault
-state, hops ESP-NOW channels until station control is found, and pulses the
-vibration motor while excluding motor noise from movement energy.
+state, connects to the configured home WiFi networks, discovers its paired
+station through UDP announcements, and pulses the vibration motor while
+excluding motor noise from movement energy.
 
-ESP-NOW protocol v2 retains the newest qualifying movement event for up to 10
+WiFi UDP protocol v3 retains the newest qualifying movement event for up to 10
 seconds, retransmits it until the station acknowledges it, and confirms a
-vibration request only after the motor output actually starts. Station and
-bracelet firmware must be flashed together.
+vibration request only after the motor output actually starts. The first valid
+station is paired in NVS. Station and bracelet firmware must be flashed together.
 
 ## Target Behavior
 
@@ -28,7 +29,7 @@ The bracelet should:
 
 - Read motion data from the BMI270.
 - Detect current physical movement.
-- Report activity state and movement events to the station over ESP-NOW.
+- Report activity state and movement events to the station over WiFi UDP.
 - Report low-battery and fault states when available.
 - Preserve battery life where possible.
 - Stay dedicated to one station.
@@ -65,19 +66,21 @@ Do not change these assumptions without asking:
 
 ## Communication
 
-Target station link is ESP-NOW.
+Target station link is binary UDP over the shared home WiFi network.
 
 The bracelet should send enough telemetry for the station to decide alarm state, but the station remains authoritative.
 
-ESP-NOW protocol v2 retains the newest qualifying 200 ms energy event for up to
+WiFi UDP protocol v3 retains the newest qualifying 200 ms energy event for up to
 10 seconds and retransmits it with its age until the station acknowledges it.
 The bracelet also acknowledges a vibration request only after the motor has
-actually started. Station and bracelet firmware must be updated together; v1
-packets are not accepted.
+actually started. The bracelet sends status every 10 seconds outside an active
+alarm and every 200 ms while ringing or validating activity, with immediate
+status for important changes. Station and bracelet firmware must be updated
+together; older packet versions are not accepted.
 
-Do not introduce WiFi-heavy bracelet behavior unless explicitly requested; bracelet power consumption matters.
-
-Room-to-room ESP-NOW range is an assumption that must be physically tested. If it is not reliable enough for the target house distance, ask before changing the transport.
+The bracelet stays associated to WiFi, enables radio sleep outside the active
+alarm, and disables it during the alarm. Battery life and room-to-room WiFi
+coverage remain physical validation requirements.
 
 ## UML Documentation
 
@@ -88,7 +91,7 @@ Update the relevant `.puml` files when changing:
 - bracelet class/module boundaries;
 - BMI270 sensor flow;
 - activity scoring and validation flow;
-- ESP-NOW telemetry format or send behavior;
+- WiFi UDP telemetry format, pairing, discovery, or send behavior;
 - battery readiness logic;
 - fault-handling paths.
 
@@ -119,4 +122,4 @@ Before finishing, report:
 - UML files updated, or why no UML update was needed.
 - Commands run.
 - Whether firmware was built.
-- Remaining sensor, ESP-NOW, range, or hardware assumptions.
+- Remaining sensor, WiFi UDP, range, battery, or hardware assumptions.

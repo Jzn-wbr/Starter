@@ -16,13 +16,13 @@ Target v1 communication paths:
 
 - App -> Supabase: upload music, select music, configure next alarm.
 - Station -> Supabase: read alarm plan, read selected music URL, write station/problem state.
-- Bracelet -> Station: send activity and battery/fault telemetry over ESP-NOW.
-- Station -> Bracelet: optional ESP-NOW control messages such as current alarm phase or threshold profile.
+- Bracelet -> Station: send activity and battery/fault telemetry over binary UDP on the shared home WiFi.
+- Station -> Bracelet: send UDP control messages such as current alarm phase, acknowledgements, vibration requests, or threshold profile.
 - App -> Station: no direct communication in v1.
 - App -> Bracelet: no direct communication in v1.
 - Bracelet -> Supabase: no direct communication in v1.
 
-ESP-NOW is the target station/bracelet link because both devices are ESP32-family boards and the bracelet should avoid WiFi-heavy behavior. Agents must treat room-to-room range as an assumption to test physically. If ESP-NOW is unreliable across the needed house distance, ask before changing transport.
+WiFi UDP is the target station/bracelet link. Both devices join the same configured home network; the station announces itself by subnet broadcast and normal paired traffic is unicast. The bracelet uses adaptive telemetry and WiFi sleep outside the alarm to limit power consumption. Home WiFi coverage, router client isolation, latency, and battery life must be tested physically.
 
 ## Supabase V1 Schema
 
@@ -95,7 +95,7 @@ Single station-published row for the latest bracelet state as seen by the statio
 - `bracelet_last_seen_ms`: station uptime timestamp for the last bracelet packet, or `null`.
 - `bracelet_energy`: latest 200 ms energy window reported by the bracelet.
 - `bracelet_energy_valid_ms`: measured time inside that 200 ms window, excluding vibration and settling time.
-- `bracelet_energy_threshold`: station threshold used to mute alarm audio for v1. The current firmware default is `1333333`.
+- `bracelet_energy_threshold`: station threshold used to mute alarm audio for v1. The current firmware default is `1000000`.
 - `energy_mute_remaining_ms`: remaining station-side mute time produced by bracelet energy.
 - `bracelet_vibrating`: whether the bracelet vibration motor is currently active.
 - `updated_at`: SQL `timestamptz`, updated automatically by the database on row update.
@@ -151,7 +151,7 @@ Allowed station transitions for v1:
 - `armed -> idle`: app disables the next alarm.
 - `armed -> ringing`: alarm time is reached and prerequisites are valid.
 - `armed -> fault`: a blocking problem appears before alarm time.
-- `ringing -> validating_activity`: bracelet energy reaches `1333333` during the alarm window, so alarm audio is muted for 10 seconds while monitoring continues.
+- `ringing -> validating_activity`: bracelet energy reaches `1000000` during the alarm window, so alarm audio is muted for 10 seconds while monitoring continues.
 - `ringing -> ringing`: bracelet packets are lost for more than `3s`; publish `bracelet_missing`, keep alarm audio playing, and resume movement detection automatically when packets return.
 - `ringing -> fault`: station audio output fails.
 - `ringing -> stopped`: the 10-minute alarm activity window has ended.
@@ -203,11 +203,12 @@ Supabase stores raw battery voltage for station and bracelet status. User-facing
 
 Station battery voltage is measured on station GPIO34 through a 2:1 voltage divider: `Vbat = 2 * Vadc`.
 
-## ESP-NOW Contract
+## Bracelet/Station WiFi UDP Contract
 
 Use compact binary packets. All packets start with:
 
-- `protocol_version`: `2`. Version 1 packets are rejected; station and bracelet firmware must be updated together.
+- `magic`: uint32 value identifying Starter traffic before any packet is parsed.
+- `protocol_version`: `3`. Older packets are rejected; station and bracelet firmware must be updated together.
 - `message_type`: enum below.
 - `sender_role`: `station` or `bracelet`.
 - `device_id`: 6-byte MAC address.
@@ -221,7 +222,7 @@ Use compact binary packets. All packets start with:
 - `3`: `pairing_probe`, reserved for future explicit pairing.
 - `4`: `debug_event`, development only.
 
-### ESP-NOW `bracelet_status` Packet
+### UDP `bracelet_status` Packet
 
 Fields:
 
@@ -240,14 +241,14 @@ Fields:
 - `movement_event_valid_ms`: valid measured milliseconds of the retained event.
 - `vibration_ack_id`: latest vibration request identifier for which the motor actually started.
 
-Default send rate:
+Both devices bind UDP port `42100`. Default send rate:
 
-- Bracelet status is sent over ESP-NOW at `5 Hz` in v1 so the station can react quickly to activity. The station must not mirror this to Supabase at 5 Hz.
-- Station control is sent on a `700ms` cadence in v1, plus immediately on important audio state changes. The cadence intentionally avoids a stable multiple of the bracelet `200ms` send period.
+- Bracelet status is sent every `10s` outside an active alarm and at `5 Hz` while ringing or validating activity. Qualifying movement during the alarm, vibration acknowledgement, first contact, faults, and important state changes force an immediate status. The station must not mirror high-rate telemetry to Supabase.
+- Station control is sent every `5s` outside an alarm, every `700ms` during an alarm, and immediately on important state changes.
 
 Station timeout rules:
 
-- If no bracelet packet for `15s` while `armed`, publish `bracelet_missing`.
+- If no bracelet packet for `25s` while `armed`, publish `bracelet_missing`.
 - If no bracelet packet for `3s` while `ringing`, publish `bracelet_missing` and keep alarm audio playing.
 - If no bracelet packet for `3s` during an existing movement mute, publish `bracelet_missing` but preserve the mute deadline. A delayed event can recover only the unelapsed part of its original 10-second interval.
 - After a Supabase HTTPS failure, the station waits `30s` before trying another Supabase request. This avoids repeated TLS allocation failures during low-memory recovery after streaming.
@@ -264,9 +265,11 @@ Fields:
 - `acknowledged_movement_event_id`: latest movement event accepted or intentionally ignored by the station.
 - `vibration_request_id`: non-zero identifier regenerated whenever vibration changes from not requested to requested.
 
-The bracelet must still be able to send status before receiving station control. Reliable movement delivery and confirmed pre-unmute vibration use the acknowledgements carried by subsequent station control packets.
+The bracelet learns the station IP from a valid broadcast `station_control`, then immediately sends its first unicast status. Reliable movement delivery and confirmed pre-unmute vibration use the acknowledgements carried by subsequent station control packets.
 When `vibration_request` is true, the bracelet pulses its motor instead of holding it continuously on. The current firmware default is `500ms` on every `4s`, with BMI270 energy ignored while the motor is active and during the short settling time after it stops. When the motor first starts for a request, the bracelet echoes its identifier in `vibration_ack_id` and forces a status response.
-After receiving `station_control`, the bracelet delays its explicit reply by `100ms` instead of replying in the same radio slot. This reduces regular ESP-NOW collisions with station control packets.
+The station broadcasts `station_control` for discovery and rediscovery, then uses the learned IP for unicast control. Controls are sent every `5s` outside an alarm, every `700ms` during an alarm, and immediately for important state changes. UDP loss is handled by the existing event retention, identifiers, retransmission, and application acknowledgements rather than by a transport-level session.
+
+The first valid exchange pairs the two device MAC identifiers in NVS. Later packets from another device identifier are rejected, while the paired peer IP may be relearned after DHCP changes or reconnects. Replacing a paired device requires erasing NVS/flash before reflashing. No direct AP or ESP-NOW fallback is used when the home router is unavailable.
 
 The station remains authoritative. Bracelet energy is input to the station, not a direct stop command.
 
@@ -276,7 +279,7 @@ Use these v1 defaults unless physical testing proves they are wrong:
 
 - The station opens a fixed `10min` activity window at the configured alarm time.
 - During that window, the station plays alarm audio when bracelet energy is below threshold or missing.
-- If a bracelet energy window reaches the station threshold, currently `1333333`, the bracelet retains it as a movement event for up to `10s` and retransmits it until acknowledged. The station revalidates the event and mutes alarm output with station `XSMT` on GPIO26 for the unelapsed part of the original 10-second interval. For example, an event received at age `4s` produces `6s` of mute.
+- If a bracelet energy window reaches the station threshold, currently `1000000`, the bracelet retains it as a movement event for up to `10s` and retransmits it until acknowledged. The station revalidates the event and mutes alarm output with station `XSMT` on GPIO26 for the unelapsed part of the original 10-second interval. For example, an event received at age `4s` produces `6s` of mute.
 - Duplicate, out-of-order, pre-alarm, invalid, or at-least-10-second-old movement events do not restart the mute. A newer valid event may extend the existing deadline.
 - When the mute expires, the station keeps `XSMT` muted and requests vibration with a new identifier. After matching `vibration_ack_id`, it gives the user a 3-second pre-unmute warning plus the `500ms` jitter grace. Without acknowledgement after `3s`, it resumes alarm audio conservatively. A new valid movement event during either wait restarts only its own remaining interval.
 - When the 10-minute window ends, the station stops alarm audio and marks the alarm revision complete, regardless of energy history.
@@ -332,7 +335,7 @@ Agents must update the relevant `.puml` files when changing:
 - app use cases or user-facing flows;
 - class/module boundaries;
 - state machines;
-- ESP-NOW packet flow;
+- WiFi UDP packet flow, discovery, and pairing;
 - Supabase/config flow in station firmware;
 - activity validation flow in bracelet firmware;
 - fallback or fault-handling architecture.
@@ -348,5 +351,5 @@ Recommended order for agents:
 3. Implement station time sync, alarm state machine, and fallback sound.
 4. Implement app upload, music selection, alarm plan editing, and status display.
 5. Implement bracelet BMI270 activity detection.
-6. Implement ESP-NOW bracelet/station telemetry.
+6. Implement WiFi UDP bracelet/station telemetry.
 7. Integrate and validate the complete wake-up flow.

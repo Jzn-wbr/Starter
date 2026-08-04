@@ -141,7 +141,7 @@ create table if not exists bracelet_status (
   bracelet_energy_valid_ms integer not null default 0 check (
     bracelet_energy_valid_ms between 0 and 200
   ),
-  bracelet_energy_threshold integer not null default 1333333 check (
+  bracelet_energy_threshold integer not null default 1000000 check (
     bracelet_energy_threshold >= 0
   ),
   energy_mute_remaining_ms integer not null default 0 check (
@@ -177,10 +177,10 @@ alter table bracelet_status
   add column if not exists bracelet_energy_valid_ms integer not null default 0;
 
 alter table bracelet_status
-  add column if not exists bracelet_energy_threshold integer not null default 1333333;
+  add column if not exists bracelet_energy_threshold integer not null default 1000000;
 
 alter table bracelet_status
-  alter column bracelet_energy_threshold set default 1333333;
+  alter column bracelet_energy_threshold set default 1000000;
 
 alter table bracelet_status
   add column if not exists energy_mute_remaining_ms integer not null default 0;

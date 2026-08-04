@@ -2,68 +2,53 @@
 title Bracelet Firmware Flow
 
 start
-:Configure vibration motor output on IO0;
-:Configure battery ADC input on IO1;
-:Start I2C on SDA IO3 and SCL IO2;
-:Initialize BMI270 on address 0x68 or 0x69;
-:Measure divided LiPo voltage and derive battery percent locally;
-:Start WiFi station mode without AP;
-:Initialize ESP-NOW broadcast telemetry peer;
-:Set ESP-NOW channel to 1;
-:Send initial bracelet_status packet;
+:Configure vibration motor, battery ADC and BMI270;
+:Load the paired station MAC from NVS;
+:Start WiFi STA mode with radio sleep enabled;
+:Try the primary then fallback home network;
+:Bind UDP port 42100 after association;
 
 repeat
+  :Maintain non-blocking WiFi reconnection;
   :Sample battery once per second;
-  if (station_control heard in last 15 seconds?) then (yes)
-    :Keep current ESP-NOW channel;
-  else (no)
-    :Hop to next ESP-NOW channel every 300 ms;
-    :Force bracelet_status on the new channel;
-  endif
-  if (BMI270 ready?) then (yes)
-    :Maintain 200 ms energy window;
-    if (vibration motor is active or settling?) then (yes)
-      :Skip BMI270 energy sample;
-      :Do not add valid measured time;
+
+  if (UDP station_control received?) then (yes)
+    if (station not paired?) then (yes)
+      :Persist the first valid station MAC in NVS;
     else (no)
-      :Read accelerometer and gyroscope at 50 Hz;
-      :Subtract weak accel/gyro noise floors;
-      :Add squared 6-axis delta energy;
-      :Accumulate valid measured time;
+      :Reject controls from any other MAC;
     endif
+    :Learn or update station IP from UDP source;
+    :Store station state, acknowledgements and vibration request;
+    if (alarm active?) then (yes)
+      :Disable WiFi radio sleep;
+      :Use 200 ms status cadence;
+    else (no)
+      :Enable WiFi radio sleep;
+      :Use 10 second status cadence;
+    endif
+  endif
+
+  if (BMI270 ready and motor settled?) then (yes)
+    :Read accelerometer and gyroscope at 50 Hz;
+    :Accumulate noise-filtered energy in 200 ms windows;
   else (no)
-    :Retry BMI270 initialization every 2 seconds;
+    :Exclude vibration noise or retry BMI270;
   endif
 
   if (completed window reaches threshold?) then (yes)
-    :Create a version 2 movement event\nwith id, uptime, energy and valid ms;
-    :Retain it for at most 10 seconds\nuntil station acknowledgement;
+    :Create a protocol v3 movement event;
+    :Retain for at most 10 seconds until acknowledged;
+    :Send bracelet_status immediately by UDP unicast;
   endif
 
-  if (station_control received?) then (yes)
-    :Store station state, movement acknowledgement,\nvibration_request and request id;
-    :Lock current ESP-NOW channel temporarily;
-    :Schedule bracelet_status reply\n100 ms later;
+  if (vibration requested?) then (yes)
+    :Pulse motor 500 ms every 4 seconds;
+    :Acknowledge id only after motor starts;
+    :Send acknowledgement immediately;
   endif
 
-  if (vibration_request?) then (yes)
-    :Start pulse phase when request turns on;
-    :Pulse vibration motor\n500 ms every 4 seconds;
-    :Acknowledge the request id only after\nthe motor output turns on;
-    :Ignore BMI270 energy while motor is on\nand during 450 ms settling;
-  else (no)
-    :Keep vibration motor off;
-  endif
-
-  if (sensor fault?) then (yes)
-    :Report state=fault and fault_code=sensor_fault;
-  elseif (battery < 30 percent?) then (yes)
-    :Report state=low_battery and fault_code=bracelet_low_battery;
-  else (no)
-    :Report state=ready;
-  endif
-
-  :Send protocol v2 bracelet_status every 200 ms\nwith latest energy, retained movement event\nand vibration acknowledgement;
+  :Send adaptive protocol v3 status with telemetry;
 repeat while (device powered)
 
 @enduml
