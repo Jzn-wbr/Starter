@@ -20,9 +20,7 @@ Read and maintain the PlantUML diagrams in `UML/` when changing app use cases or
 
 ## Current State
 
-This folder may be empty or early-stage. Inspect it before assuming a framework is already installed.
-
-If creating the app, use Vue/Vite unless the user explicitly chooses another stack.
+v1, functional but frontend is ugly
 
 ## Target Data Flow
 
@@ -30,11 +28,13 @@ V1 target:
 
 `PWA -> Supabase -> station`
 
-The app should write music files and alarm configuration to Supabase. The station reads the selected alarm configuration from Supabase.
+The app should write music files and alarm configuration to Supabase. The station reads the selected alarm configuration from Supabase. Music files need to be check and edit if needed because sometime header is to big for example.
 
 Do not make the app directly responsible for triggering or stopping the alarm.
 
 The app should also read station-published problem/status state from Supabase when that contract is implemented. It does not talk directly to the station or bracelet in v1.
+
+The app should minimize the amount of request.
 
 ## Supabase And Auth
 
