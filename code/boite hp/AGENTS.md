@@ -30,7 +30,7 @@ The current firmware already:
 - Loads the selected track from `alarm_audio_selection` and `music_tracks`.
 - Outputs audio over I2S pins for the PCM5102A/PAM8403 audio chain.
 - Runs the fixed alarm activity window and generated local fallback sound.
-- Receives WiFi UDP protocol v3 movement events, acknowledges them, recovers
+- Receives WiFi UDP protocol v4 movement events and connected-network RSSI, acknowledges them, recovers
   their unelapsed mute time after packet loss, and confirms bracelet vibration
   before the pre-unmute warning starts.
 

@@ -1,6 +1,6 @@
 # Bracelet / station WiFi UDP setup
 
-The station and bracelet must use protocol v3 firmware together and must join
+The station and bracelet must use protocol v4 firmware together and must join
 the same non-guest WiFi network. The router must allow broadcast UDP and direct
 traffic between clients.
 
@@ -12,7 +12,7 @@ traffic between clients.
    networks, in the same order. Both real secret files are ignored by Git.
 3. Build and upload both firmwares.
 4. Boot the station and bracelet on the same LAN. The station broadcasts a
-   protocol v3 control on UDP port `42100`; the first valid exchange stores the
+   protocol v4 control on UDP port `42100`; the first valid exchange stores the
    two peer MAC identifiers in NVS.
 
 Expected logs include `udp_status:ready`, `udp_pairing:station_saved` on the

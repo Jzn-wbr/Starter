@@ -18,9 +18,10 @@ state, connects to the configured home WiFi networks, discovers its paired
 station through UDP announcements, and pulses the vibration motor while
 excluding motor noise from movement energy.
 
-WiFi UDP protocol v3 retains the newest qualifying movement event for up to 10
+WiFi UDP protocol v4 retains the newest qualifying movement event for up to 10
 seconds, retransmits it until the station acknowledges it, and confirms a
-vibration request only after the motor output actually starts. The first valid
+vibration request only after the motor output actually starts. Status packets
+also report the RSSI of the currently connected WiFi network. The first valid
 station is paired in NVS. Station and bracelet firmware must be flashed together.
 
 ## Target Behavior
@@ -70,7 +71,7 @@ Target station link is binary UDP over the shared home WiFi network.
 
 The bracelet should send enough telemetry for the station to decide alarm state, but the station remains authoritative.
 
-WiFi UDP protocol v3 retains the newest qualifying 200 ms energy event for up to
+WiFi UDP protocol v4 retains the newest qualifying 200 ms energy event for up to
 10 seconds and retransmits it with its age until the station acknowledges it.
 The bracelet also acknowledges a vibration request only after the motor has
 actually started. The bracelet sends status every 10 seconds outside an active

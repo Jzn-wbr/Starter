@@ -7,7 +7,7 @@ participant "Station ESP32" as Station
 
 Bracelet -> Router : associate using local secrets
 Station -> Router : associate using local secrets
-Station -> Bracelet : subnet broadcast station_control protocol v3 on UDP 42100
+Station -> Bracelet : subnet broadcast station_control protocol v4 on UDP 42100
 
 alt first valid exchange
   Bracelet -> Bracelet : persist station MAC in NVS
@@ -20,13 +20,13 @@ end
 
 loop idle / armed
   Station -> Bracelet : control or announcement every 5 seconds
-  Bracelet -> Station : status every 10 seconds
+  Bracelet -> Station : status every 10 seconds\nwith connected Wi-Fi RSSI
 end
 
 loop ringing / validating_activity
   Station -> Bracelet : unicast control every 700 ms
   Station -> Bracelet : periodic broadcast for rediscovery
-  Bracelet -> Station : status every 200 ms
+  Bracelet -> Station : status every 200 ms\nwith connected Wi-Fi RSSI
   Bracelet -> Station : qualifying movement immediately
 end
 

@@ -5,7 +5,7 @@
 namespace BraceletStationProtocol
 {
 constexpr uint32_t MAGIC = 0x54525453UL; // "STRT" on ESP32 little-endian targets.
-constexpr uint8_t VERSION = 3;
+constexpr uint8_t VERSION = 4;
 constexpr uint16_t UDP_PORT = 42100;
 
 constexpr uint8_t MESSAGE_BRACELET_STATUS = 1;
@@ -17,6 +17,7 @@ constexpr uint8_t THRESHOLD_PROFILE_NORMAL = 0;
 constexpr uint32_t NORMAL_ENERGY_THRESHOLD = 1000000;
 constexpr uint16_t MIN_ENERGY_VALID_MS = 80;
 constexpr uint32_t MOVEMENT_HISTORY_MS = 10000;
+constexpr int8_t WIFI_RSSI_UNKNOWN_DBM = 0;
 
 struct __attribute__((packed)) PacketHeader
 {
@@ -36,6 +37,7 @@ struct __attribute__((packed)) BraceletStatusPacket
   uint8_t activityScore;
   uint8_t validated;
   uint16_t batteryVoltageMv;
+  int8_t wifiRssiDbm;
   uint8_t faultCode;
   uint8_t flags;
   uint32_t energy;
@@ -61,6 +63,6 @@ struct __attribute__((packed)) StationControlPacket
 };
 
 static_assert(sizeof(PacketHeader) == 21, "Unexpected UDP protocol header size");
-static_assert(sizeof(BraceletStatusPacket) == 56, "Unexpected bracelet_status size");
+static_assert(sizeof(BraceletStatusPacket) == 57, "Unexpected bracelet_status size");
 static_assert(sizeof(StationControlPacket) == 40, "Unexpected station_control size");
 }

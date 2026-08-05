@@ -4,9 +4,10 @@ title Bracelet Firmware Flow
 start
 :Configure vibration motor, battery ADC and BMI270;
 :Load the paired station MAC from NVS;
-:Start WiFi STA mode with radio sleep enabled;
-:Try the primary then fallback home network;
+:Start WiFi STA mode with radio sleep disabled;
+:Try the primary then fallback home network with radio awake;
 :Bind UDP port 42100 after association;
+:Restore radio sleep outside an active alarm;
 
 repeat
   :Maintain non-blocking WiFi reconnection;
@@ -37,7 +38,7 @@ repeat
   endif
 
   if (completed window reaches threshold?) then (yes)
-    :Create a protocol v3 movement event;
+    :Create a protocol v4 movement event;
     :Retain for at most 10 seconds until acknowledged;
     :Send bracelet_status immediately by UDP unicast;
   endif
@@ -48,7 +49,7 @@ repeat
     :Send acknowledgement immediately;
   endif
 
-  :Send adaptive protocol v3 status with telemetry;
+  :Send adaptive protocol v4 status with telemetry and connected Wi-Fi RSSI;
 repeat while (device powered)
 
 @enduml

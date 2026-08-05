@@ -53,6 +53,7 @@ const BATTERY_EMPTY_V = 3.3
 const BATTERY_FULL_V = 4.2
 const ALARM_LOCK_BEFORE_MS = 60 * 60 * 1000
 const ALARM_WINDOW_MS = 15 * 60 * 1000
+const STATUS_POLL_MS = 30_000
 const ACCEPTED_AUDIO_TYPES = new Set(['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4'])
 const ACCEPTED_AUDIO_EXTENSIONS = new Set(['mp3', 'wav', 'ogg', 'm4a', 'mp4'])
 
@@ -242,7 +243,12 @@ function isPageVisible() {
 
 function startStatusPolling() {
   if (pollTimer || !isPageVisible()) return
-  pollTimer = window.setInterval(() => void loadStatuses(), 5_000)
+  pollTimer = window.setInterval(() => void loadStatuses(), STATUS_POLL_MS)
+}
+
+function toggleTechnicalDetails() {
+  technicalDetailsOpen.value = !technicalDetailsOpen.value
+  if (technicalDetailsOpen.value) void loadStatuses()
 }
 
 function stopStatusPolling() {
@@ -712,6 +718,13 @@ function formatBatteryVoltage(value?: number | null) {
   return value === null || value === undefined ? 'Inconnue' : `${value.toFixed(2)} V`
 }
 
+function formatWifiRssi(value?: number | null) {
+  if (value === null || value === undefined || value >= 0) return 'Indisponible — bracelet hors connexion'
+  const rounded = Math.round(value)
+  const quality = rounded >= -50 ? 'Excellent' : rounded >= -60 ? 'Très bon' : rounded >= -70 ? 'Bon' : rounded >= -80 ? 'Faible' : 'Très faible'
+  return `${rounded} dBm · ${quality}`
+}
+
 function estimateBatteryPercent(voltage?: number | null) {
   if (voltage === null || voltage === undefined || voltage <= 0.1) return null
   const ratio = (voltage - BATTERY_EMPTY_V) / (BATTERY_FULL_V - BATTERY_EMPTY_V)
@@ -1020,7 +1033,7 @@ function formatUpdatedAt(value?: string) {
         </section>
 
         <section class="technical-panel">
-          <button type="button" @click="technicalDetailsOpen = !technicalDetailsOpen">
+          <button type="button" @click="toggleTechnicalDetails">
             <span>Détails techniques</span>
             <ChevronDown :class="{ open: technicalDetailsOpen }" :size="20" />
           </button>
@@ -1036,6 +1049,7 @@ function formatUpdatedAt(value?: string) {
               <strong>{{ braceletStatus ? problemLabels[braceletStatus.problem_code] : 'Aucune donnée' }}</strong>
               <small>{{ braceletStatus?.problem_message || 'Pas de message de diagnostic' }}</small>
               <small>Batterie : {{ formatBatteryVoltage(braceletStatus?.bracelet_battery_voltage) }}</small>
+              <small>Wi-Fi connecté : {{ formatWifiRssi(braceletStatus?.bracelet_wifi_rssi_dbm) }}</small>
             </div>
           </div>
         </section>

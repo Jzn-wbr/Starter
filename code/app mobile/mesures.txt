@@ -1,0 +1,1177 @@
+mesures:
+
+original:
+=== wifi_scan:2 ===
+visible_networks:7
+01 | rssi= -79 dBm | channel=11 | auth=WPA2      | Devices
+02 | rssi= -79 dBm | channel=11 | auth=other     | eduroam
+03 | rssi= -79 dBm | channel=11 | auth=other     | Part
+04 | rssi= -79 dBm | channel=11 | auth=open      | public-HEIG-VD
+05 | rssi= -80 dBm | channel=11 | auth=other     | HEIG-VD
+06 | rssi= -85 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -94 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+
+=== wifi_scan:3 ===
+visible_networks:7
+01 | rssi= -78 dBm | channel=11 | auth=other     | Part
+02 | rssi= -79 dBm | channel=11 | auth=other     | eduroam
+03 | rssi= -79 dBm | channel=11 | auth=other     | HEIG-VD
+04 | rssi= -79 dBm | channel=11 | auth=open      | public-HEIG-VD
+05 | rssi= -80 dBm | channel=11 | auth=WPA2      | Devices
+06 | rssi= -85 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -93 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+
+=== wifi_scan:4 ===
+visible_networks:8
+01 | rssi= -78 dBm | channel=11 | auth=WPA2      | Devices
+02 | rssi= -78 dBm | channel=11 | auth=other     | eduroam
+03 | rssi= -78 dBm | channel=11 | auth=other     | HEIG-VD
+04 | rssi= -78 dBm | channel=11 | auth=other     | Part
+05 | rssi= -78 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -84 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -88 dBm | channel= 6 | auth=other     | Part
+08 | rssi= -94 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+
+=== wifi_scan:5 ===
+visible_networks:6
+01 | rssi= -77 dBm | channel=11 | auth=other     | Part
+02 | rssi= -78 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -78 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -78 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -78 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -84 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+
+=== wifi_scan:6 ===
+visible_networks:7
+01 | rssi= -78 dBm | channel=11 | auth=other     | Part
+02 | rssi= -79 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -79 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -79 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -79 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -85 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -94 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+
+=== wifi_scan:7 ===
+visible_networks:7
+01 | rssi= -77 dBm | channel=11 | auth=other     | Part
+02 | rssi= -78 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -78 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -78 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -78 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -85 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -93 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+
+
+antenne 1mm section 50 mm longeur, 18 mm boucle, 32mm haut
+
+=== wifi_scan:147 ===
+visible_networks:39
+01 | rssi= -44 dBm | channel=11 | auth=other     | Part
+02 | rssi= -45 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -45 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -45 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -45 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -59 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -61 dBm | channel= 6 | auth=other     | HEIG-VD
+08 | rssi= -63 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -64 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -64 dBm | channel= 6 | auth=other     | eduroam
+11 | rssi= -64 dBm | channel= 6 | auth=other     | HEIG-VD
+12 | rssi= -64 dBm | channel= 6 | auth=open      | public-HEIG-VD
+13 | rssi= -64 dBm | channel= 6 | auth=other     | Part
+14 | rssi= -64 dBm | channel= 6 | auth=other     | eduroam
+15 | rssi= -64 dBm | channel= 6 | auth=WPA2      | Devices
+16 | rssi= -64 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -68 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+18 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+19 | rssi= -74 dBm | channel= 1 | auth=other     | HEIG-VD
+20 | rssi= -75 dBm | channel= 1 | auth=WPA2      | Devices
+21 | rssi= -75 dBm | channel= 1 | auth=other     | eduroam
+22 | rssi= -75 dBm | channel= 1 | auth=other     | Part
+23 | rssi= -75 dBm | channel= 6 | auth=open      | public-HEIG-VD
+24 | rssi= -75 dBm | channel= 6 | auth=other     | HEIG-VD
+25 | rssi= -75 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+26 | rssi= -76 dBm | channel= 1 | auth=WPA2      | Devices
+27 | rssi= -76 dBm | channel= 1 | auth=open      | public-HEIG-VD
+28 | rssi= -76 dBm | channel= 1 | auth=other     | eduroam
+29 | rssi= -76 dBm | channel= 6 | auth=other     | eduroam
+30 | rssi= -76 dBm | channel= 6 | auth=WPA2      | Devices
+31 | rssi= -76 dBm | channel= 6 | auth=other     | Part
+32 | rssi= -77 dBm | channel= 1 | auth=other     | HEIG-VD
+33 | rssi= -77 dBm | channel= 1 | auth=other     | Part
+34 | rssi= -78 dBm | channel= 1 | auth=other     | Part
+35 | rssi= -79 dBm | channel= 1 | auth=other     | HEIG-VD
+36 | rssi= -79 dBm | channel= 1 | auth=open      | public-HEIG-VD
+37 | rssi= -79 dBm | channel= 1 | auth=other     | eduroam
+38 | rssi= -79 dBm | channel= 1 | auth=WPA2      | Devices
+39 | rssi= -84 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:148 ===
+visible_networks:35
+01 | rssi= -44 dBm | channel=11 | auth=other     | Part
+02 | rssi= -45 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -45 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -45 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -45 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -59 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -61 dBm | channel= 6 | auth=other     | Part
+08 | rssi= -62 dBm | channel= 6 | auth=other     | eduroam
+09 | rssi= -62 dBm | channel= 6 | auth=other     | eduroam
+10 | rssi= -62 dBm | channel= 6 | auth=open      | public-HEIG-VD
+11 | rssi= -62 dBm | channel= 6 | auth=WPA2      | Devices
+12 | rssi= -62 dBm | channel= 6 | auth=other     | HEIG-VD
+13 | rssi= -62 dBm | channel= 6 | auth=other     | Part
+14 | rssi= -63 dBm | channel= 6 | auth=WPA2      | Devices
+15 | rssi= -63 dBm | channel= 6 | auth=other     | HEIG-VD
+16 | rssi= -63 dBm | channel= 6 | auth=open      | public-HEIG-VD
+17 | rssi= -70 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+18 | rssi= -70 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+19 | rssi= -74 dBm | channel= 1 | auth=WPA2      | Devices
+20 | rssi= -74 dBm | channel= 1 | auth=other     | eduroam
+21 | rssi= -74 dBm | channel= 1 | auth=other     | HEIG-VD
+22 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+23 | rssi= -74 dBm | channel= 1 | auth=other     | Part
+24 | rssi= -75 dBm | channel= 1 | auth=WPA2      | Devices
+25 | rssi= -76 dBm | channel= 1 | auth=other     | eduroam
+26 | rssi= -76 dBm | channel= 1 | auth=other     | HEIG-VD
+27 | rssi= -76 dBm | channel= 1 | auth=open      | public-HEIG-VD
+28 | rssi= -76 dBm | channel= 1 | auth=other     | Part
+29 | rssi= -79 dBm | channel= 1 | auth=other     | eduroam
+30 | rssi= -79 dBm | channel= 1 | auth=WPA2      | Devices
+31 | rssi= -79 dBm | channel= 1 | auth=other     | HEIG-VD
+32 | rssi= -79 dBm | channel= 1 | auth=open      | public-HEIG-VD
+33 | rssi= -79 dBm | channel= 1 | auth=other     | Part
+34 | rssi= -79 dBm | channel= 6 | auth=other     | Part
+35 | rssi= -87 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:149 ===
+visible_networks:35
+01 | rssi= -44 dBm | channel=11 | auth=other     | Part
+02 | rssi= -46 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -46 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -46 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -46 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -58 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -63 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -63 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -63 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -63 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -63 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -65 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -65 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -65 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -65 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -65 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -68 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+18 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+19 | rssi= -73 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+20 | rssi= -74 dBm | channel= 1 | auth=other     | eduroam
+21 | rssi= -74 dBm | channel= 1 | auth=other     | HEIG-VD
+22 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+23 | rssi= -74 dBm | channel= 1 | auth=other     | Part
+24 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+25 | rssi= -74 dBm | channel= 1 | auth=other     | Part
+26 | rssi= -74 dBm | channel= 1 | auth=WPA2      | Devices
+27 | rssi= -74 dBm | channel= 1 | auth=other     | eduroam
+28 | rssi= -74 dBm | channel= 1 | auth=other     | HEIG-VD
+29 | rssi= -78 dBm | channel= 1 | auth=other     | eduroam
+30 | rssi= -78 dBm | channel= 1 | auth=WPA2      | Devices
+31 | rssi= -78 dBm | channel= 1 | auth=other     | HEIG-VD
+32 | rssi= -78 dBm | channel= 1 | auth=open      | public-HEIG-VD
+33 | rssi= -78 dBm | channel= 1 | auth=other     | Part
+34 | rssi= -81 dBm | channel= 6 | auth=other     | Part
+35 | rssi= -84 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:150 ===
+visible_networks:34
+01 | rssi= -44 dBm | channel=11 | auth=other     | Part
+02 | rssi= -45 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -45 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -45 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -45 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -56 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -62 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -62 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -62 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -62 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -62 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -63 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -63 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -63 dBm | channel= 6 | auth=open      | public-HEIG-VD
+15 | rssi= -63 dBm | channel= 6 | auth=other     | Part
+16 | rssi= -64 dBm | channel= 6 | auth=other     | HEIG-VD
+17 | rssi= -67 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+18 | rssi= -71 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+19 | rssi= -75 dBm | channel= 1 | auth=other     | eduroam
+20 | rssi= -75 dBm | channel= 1 | auth=WPA2      | Devices
+21 | rssi= -75 dBm | channel= 1 | auth=other     | HEIG-VD
+22 | rssi= -75 dBm | channel= 1 | auth=other     | Part
+23 | rssi= -75 dBm | channel= 1 | auth=other     | HEIG-VD
+24 | rssi= -76 dBm | channel= 1 | auth=open      | public-HEIG-VD
+25 | rssi= -76 dBm | channel= 1 | auth=WPA2      | Devices
+26 | rssi= -76 dBm | channel= 1 | auth=other     | eduroam
+27 | rssi= -76 dBm | channel= 1 | auth=open      | public-HEIG-VD
+28 | rssi= -76 dBm | channel= 1 | auth=other     | Part
+29 | rssi= -80 dBm | channel= 1 | auth=other     | eduroam
+30 | rssi= -80 dBm | channel= 1 | auth=WPA2      | Devices
+31 | rssi= -80 dBm | channel= 1 | auth=open      | public-HEIG-VD
+32 | rssi= -80 dBm | channel= 1 | auth=other     | Part
+33 | rssi= -81 dBm | channel= 1 | auth=other     | HEIG-VD
+34 | rssi= -82 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:151 ===
+visible_networks:34
+01 | rssi= -43 dBm | channel=11 | auth=other     | Part
+02 | rssi= -44 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -44 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -44 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -44 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -58 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -60 dBm | channel= 6 | auth=other     | Part
+08 | rssi= -61 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -61 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -61 dBm | channel= 6 | auth=other     | eduroam
+11 | rssi= -61 dBm | channel= 6 | auth=other     | HEIG-VD
+12 | rssi= -62 dBm | channel= 6 | auth=WPA2      | Devices
+13 | rssi= -63 dBm | channel= 6 | auth=other     | eduroam
+14 | rssi= -63 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -63 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -63 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -70 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+18 | rssi= -70 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+19 | rssi= -72 dBm | channel= 1 | auth=other     | eduroam
+20 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+21 | rssi= -73 dBm | channel= 1 | auth=other     | HEIG-VD
+22 | rssi= -73 dBm | channel= 1 | auth=open      | public-HEIG-VD
+23 | rssi= -73 dBm | channel= 1 | auth=other     | Part
+24 | rssi= -76 dBm | channel= 1 | auth=other     | eduroam
+25 | rssi= -76 dBm | channel= 1 | auth=WPA2      | Devices
+26 | rssi= -77 dBm | channel= 1 | auth=other     | HEIG-VD
+27 | rssi= -77 dBm | channel= 1 | auth=open      | public-HEIG-VD
+28 | rssi= -77 dBm | channel= 1 | auth=other     | Part
+29 | rssi= -80 dBm | channel= 1 | auth=other     | Part
+30 | rssi= -80 dBm | channel= 1 | auth=other     | eduroam
+31 | rssi= -81 dBm | channel= 1 | auth=WPA2      | Devices
+32 | rssi= -81 dBm | channel= 1 | auth=other     | HEIG-VD
+33 | rssi= -81 dBm | channel= 1 | auth=open      | public-HEIG-VD
+34 | rssi= -83 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:152 ===
+visible_networks:34
+01 | rssi= -43 dBm | channel=11 | auth=other     | Part
+02 | rssi= -44 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -44 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -44 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -44 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -58 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -63 dBm | channel= 6 | auth=WPA2      | Devices
+08 | rssi= -64 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -64 dBm | channel= 6 | auth=other     | HEIG-VD
+10 | rssi= -64 dBm | channel= 6 | auth=other     | Part
+11 | rssi= -64 dBm | channel= 6 | auth=other     | eduroam
+12 | rssi= -65 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -65 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -65 dBm | channel= 6 | auth=open      | public-HEIG-VD
+15 | rssi= -65 dBm | channel= 6 | auth=other     | Part
+16 | rssi= -65 dBm | channel= 6 | auth=other     | HEIG-VD
+17 | rssi= -68 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+18 | rssi= -68 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+19 | rssi= -72 dBm | channel= 1 | auth=other     | Part
+20 | rssi= -74 dBm | channel= 1 | auth=WPA2      | Devices
+21 | rssi= -74 dBm | channel= 1 | auth=other     | HEIG-VD
+22 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+23 | rssi= -74 dBm | channel= 1 | auth=other     | eduroam
+24 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+25 | rssi= -74 dBm | channel= 1 | auth=other     | eduroam
+26 | rssi= -75 dBm | channel= 1 | auth=other     | Part
+27 | rssi= -75 dBm | channel= 1 | auth=WPA2      | Devices
+28 | rssi= -75 dBm | channel= 1 | auth=other     | HEIG-VD
+29 | rssi= -79 dBm | channel= 1 | auth=other     | eduroam
+30 | rssi= -79 dBm | channel= 1 | auth=WPA2      | Devices
+31 | rssi= -79 dBm | channel= 1 | auth=other     | HEIG-VD
+32 | rssi= -79 dBm | channel= 1 | auth=open      | public-HEIG-VD
+33 | rssi= -79 dBm | channel= 1 | auth=other     | Part
+34 | rssi= -84 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:153 ===
+visible_networks:29
+01 | rssi= -43 dBm | channel=11 | auth=other     | Part
+02 | rssi= -44 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -44 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -44 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -44 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -62 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -65 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -65 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -65 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -65 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -68 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -69 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -69 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -69 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -69 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -70 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+18 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+19 | rssi= -73 dBm | channel= 1 | auth=other     | HEIG-VD
+20 | rssi= -73 dBm | channel= 1 | auth=open      | public-HEIG-VD
+21 | rssi= -74 dBm | channel= 1 | auth=other     | Part
+22 | rssi= -74 dBm | channel= 1 | auth=other     | eduroam
+23 | rssi= -74 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+24 | rssi= -77 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+25 | rssi= -81 dBm | channel= 6 | auth=other     | Part
+26 | rssi= -83 dBm | channel= 1 | auth=other     | eduroam
+27 | rssi= -83 dBm | channel= 1 | auth=other     | Part
+28 | rssi= -83 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+29 | rssi= -86 dBm | channel= 1 | auth=other     | Part
+
+=== wifi_scan:154 ===
+visible_networks:27
+01 | rssi= -42 dBm | channel=11 | auth=other     | Part
+02 | rssi= -43 dBm | channel=11 | auth=other     | eduroam
+03 | rssi= -43 dBm | channel=11 | auth=other     | HEIG-VD
+04 | rssi= -43 dBm | channel=11 | auth=open      | public-HEIG-VD
+05 | rssi= -44 dBm | channel=11 | auth=WPA2      | Devices
+06 | rssi= -64 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -66 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -66 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -66 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -66 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -69 dBm | channel= 6 | auth=other     | HEIG-VD
+13 | rssi= -69 dBm | channel= 6 | auth=open      | public-HEIG-VD
+14 | rssi= -69 dBm | channel= 6 | auth=other     | Part
+15 | rssi= -70 dBm | channel= 6 | auth=other     | eduroam
+16 | rssi= -70 dBm | channel= 6 | auth=WPA2      | Devices
+17 | rssi= -74 dBm | channel= 1 | auth=other     | Part
+18 | rssi= -74 dBm | channel= 1 | auth=other     | eduroam
+19 | rssi= -74 dBm | channel= 1 | auth=WPA2      | Devices
+20 | rssi= -74 dBm | channel= 1 | auth=other     | HEIG-VD
+21 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+22 | rssi= -75 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+23 | rssi= -78 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+24 | rssi= -82 dBm | channel= 1 | auth=other     | Part
+25 | rssi= -82 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+26 | rssi= -83 dBm | channel= 1 | auth=other     | eduroam
+27 | rssi= -83 dBm | channel= 1 | auth=open      | public-HEIG-VD
+
+=== wifi_scan:155 ===
+visible_networks:35
+01 | rssi= -43 dBm | channel=11 | auth=other     | Part
+02 | rssi= -44 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -44 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -44 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -44 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -58 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -66 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -66 dBm | channel= 6 | auth=WPA2      | Devices
+09 | rssi= -66 dBm | channel= 6 | auth=other     | HEIG-VD
+10 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+11 | rssi= -67 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+12 | rssi= -68 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+13 | rssi= -68 dBm | channel= 6 | auth=other     | eduroam
+14 | rssi= -68 dBm | channel= 6 | auth=WPA2      | Devices
+15 | rssi= -68 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -68 dBm | channel= 6 | auth=other     | HEIG-VD
+17 | rssi= -68 dBm | channel= 6 | auth=other     | Part
+18 | rssi= -68 dBm | channel= 6 | auth=open      | public-HEIG-VD
+19 | rssi= -72 dBm | channel= 1 | auth=other     | eduroam
+20 | rssi= -72 dBm | channel= 1 | auth=WPA2      | Devices
+21 | rssi= -72 dBm | channel= 1 | auth=other     | HEIG-VD
+22 | rssi= -72 dBm | channel= 1 | auth=open      | public-HEIG-VD
+23 | rssi= -72 dBm | channel= 1 | auth=other     | Part
+24 | rssi= -73 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+25 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+26 | rssi= -75 dBm | channel= 1 | auth=other     | eduroam
+27 | rssi= -75 dBm | channel= 1 | auth=other     | HEIG-VD
+28 | rssi= -75 dBm | channel= 1 | auth=other     | Part
+29 | rssi= -75 dBm | channel= 1 | auth=WPA2      | Devices
+30 | rssi= -82 dBm | channel= 1 | auth=other     | HEIG-VD
+31 | rssi= -82 dBm | channel= 1 | auth=open      | public-HEIG-VD
+32 | rssi= -82 dBm | channel= 1 | auth=other     | Part
+33 | rssi= -83 dBm | channel= 1 | auth=other     | eduroam
+34 | rssi= -83 dBm | channel= 6 | auth=other     | Part
+35 | rssi= -87 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+antenne 1mm section 48 mm longeur, 18 mm boucle, 30mm haut
+=== wifi_scan:53 ===
+visible_networks:35
+01 | rssi= -53 dBm | channel=11 | auth=other     | Part
+02 | rssi= -54 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -54 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -54 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -54 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -61 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -65 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -65 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -65 dBm | channel= 6 | auth=other     | eduroam
+10 | rssi= -65 dBm | channel= 6 | auth=WPA2      | Devices
+11 | rssi= -65 dBm | channel= 6 | auth=other     | HEIG-VD
+12 | rssi= -65 dBm | channel= 6 | auth=open      | public-HEIG-VD
+13 | rssi= -65 dBm | channel= 6 | auth=other     | Part
+14 | rssi= -66 dBm | channel= 6 | auth=WPA2      | Devices
+15 | rssi= -66 dBm | channel= 6 | auth=other     | HEIG-VD
+16 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -67 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+18 | rssi= -72 dBm | channel= 1 | auth=other     | eduroam
+19 | rssi= -72 dBm | channel= 1 | auth=WPA2      | Devices
+20 | rssi= -72 dBm | channel= 1 | auth=other     | HEIG-VD
+21 | rssi= -72 dBm | channel= 1 | auth=open      | public-HEIG-VD
+22 | rssi= -72 dBm | channel= 1 | auth=other     | Part
+23 | rssi= -73 dBm | channel= 1 | auth=other     | eduroam
+24 | rssi= -73 dBm | channel= 1 | auth=other     | HEIG-VD
+25 | rssi= -73 dBm | channel= 1 | auth=other     | Part
+26 | rssi= -73 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+27 | rssi= -74 dBm | channel= 1 | auth=WPA2      | Devices
+28 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+29 | rssi= -78 dBm | channel= 1 | auth=other     | eduroam
+30 | rssi= -78 dBm | channel= 1 | auth=other     | HEIG-VD
+31 | rssi= -78 dBm | channel= 1 | auth=open      | public-HEIG-VD
+32 | rssi= -78 dBm | channel= 1 | auth=other     | Part
+33 | rssi= -79 dBm | channel= 1 | auth=WPA2      | Devices
+34 | rssi= -80 dBm | channel= 6 | auth=other     | Part
+35 | rssi= -84 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:54 ===
+visible_networks:34
+01 | rssi= -54 dBm | channel=11 | auth=other     | Part
+02 | rssi= -55 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -55 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -55 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -55 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -64 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -65 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -65 dBm | channel= 6 | auth=WPA2      | Devices
+09 | rssi= -65 dBm | channel= 6 | auth=other     | HEIG-VD
+10 | rssi= -65 dBm | channel= 6 | auth=open      | public-HEIG-VD
+11 | rssi= -65 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -66 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -66 dBm | channel= 6 | auth=open      | public-HEIG-VD
+14 | rssi= -66 dBm | channel= 6 | auth=WPA2      | Devices
+15 | rssi= -66 dBm | channel= 6 | auth=other     | HEIG-VD
+16 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -68 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+18 | rssi= -72 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+19 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+20 | rssi= -73 dBm | channel= 1 | auth=other     | eduroam
+21 | rssi= -73 dBm | channel= 1 | auth=other     | HEIG-VD
+22 | rssi= -73 dBm | channel= 1 | auth=open      | public-HEIG-VD
+23 | rssi= -73 dBm | channel= 1 | auth=other     | Part
+24 | rssi= -74 dBm | channel= 1 | auth=other     | HEIG-VD
+25 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+26 | rssi= -74 dBm | channel= 1 | auth=other     | Part
+27 | rssi= -75 dBm | channel= 1 | auth=other     | eduroam
+28 | rssi= -75 dBm | channel= 1 | auth=WPA2      | Devices
+29 | rssi= -76 dBm | channel= 1 | auth=other     | eduroam
+30 | rssi= -76 dBm | channel= 1 | auth=WPA2      | Devices
+31 | rssi= -76 dBm | channel= 1 | auth=other     | HEIG-VD
+32 | rssi= -76 dBm | channel= 1 | auth=open      | public-HEIG-VD
+33 | rssi= -76 dBm | channel= 1 | auth=other     | Part
+34 | rssi= -79 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:55 ===
+visible_networks:33
+01 | rssi= -55 dBm | channel=11 | auth=other     | Part
+02 | rssi= -56 dBm | channel=11 | auth=open      | public-HEIG-VD
+03 | rssi= -57 dBm | channel=11 | auth=WPA2      | Devices
+04 | rssi= -57 dBm | channel=11 | auth=other     | eduroam
+05 | rssi= -57 dBm | channel=11 | auth=other     | HEIG-VD
+06 | rssi= -63 dBm | channel= 6 | auth=other     | eduroam
+07 | rssi= -63 dBm | channel= 6 | auth=WPA2      | Devices
+08 | rssi= -63 dBm | channel= 6 | auth=other     | HEIG-VD
+09 | rssi= -63 dBm | channel= 6 | auth=open      | public-HEIG-VD
+10 | rssi= -63 dBm | channel= 6 | auth=other     | Part
+11 | rssi= -66 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+12 | rssi= -66 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -66 dBm | channel= 6 | auth=open      | public-HEIG-VD
+14 | rssi= -66 dBm | channel= 6 | auth=WPA2      | Devices
+15 | rssi= -66 dBm | channel= 6 | auth=other     | HEIG-VD
+16 | rssi= -67 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+17 | rssi= -67 dBm | channel= 6 | auth=other     | Part
+18 | rssi= -70 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+19 | rssi= -73 dBm | channel= 1 | auth=other     | eduroam
+20 | rssi= -73 dBm | channel= 1 | auth=other     | HEIG-VD
+21 | rssi= -74 dBm | channel= 1 | auth=WPA2      | Devices
+22 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+23 | rssi= -74 dBm | channel= 1 | auth=other     | Part
+24 | rssi= -74 dBm | channel= 1 | auth=WPA2      | Devices
+25 | rssi= -74 dBm | channel= 1 | auth=other     | eduroam
+26 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+27 | rssi= -74 dBm | channel= 1 | auth=other     | Part
+28 | rssi= -75 dBm | channel= 1 | auth=other     | HEIG-VD
+29 | rssi= -77 dBm | channel= 1 | auth=open      | public-HEIG-VD
+30 | rssi= -78 dBm | channel= 1 | auth=other     | eduroam
+31 | rssi= -78 dBm | channel= 1 | auth=other     | HEIG-VD
+32 | rssi= -78 dBm | channel= 1 | auth=other     | Part
+33 | rssi= -79 dBm | channel= 1 | auth=WPA2      | Devices
+
+=== wifi_scan:56 ===
+visible_networks:33
+01 | rssi= -50 dBm | channel=11 | auth=other     | Part
+02 | rssi= -51 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -52 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -52 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -52 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -68 dBm | channel= 6 | auth=other     | eduroam
+07 | rssi= -68 dBm | channel= 6 | auth=open      | public-HEIG-VD
+08 | rssi= -68 dBm | channel= 6 | auth=WPA2      | Devices
+09 | rssi= -68 dBm | channel= 6 | auth=other     | HEIG-VD
+10 | rssi= -68 dBm | channel= 6 | auth=other     | Part
+11 | rssi= -69 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+12 | rssi= -71 dBm | channel= 1 | auth=other     | eduroam
+13 | rssi= -71 dBm | channel= 1 | auth=WPA2      | Devices
+14 | rssi= -71 dBm | channel= 1 | auth=other     | HEIG-VD
+15 | rssi= -71 dBm | channel= 1 | auth=open      | public-HEIG-VD
+16 | rssi= -71 dBm | channel= 1 | auth=other     | Part
+17 | rssi= -71 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+18 | rssi= -74 dBm | channel= 6 | auth=other     | eduroam
+19 | rssi= -74 dBm | channel= 6 | auth=WPA2      | Devices
+20 | rssi= -74 dBm | channel= 6 | auth=other     | HEIG-VD
+21 | rssi= -74 dBm | channel= 6 | auth=open      | public-HEIG-VD
+22 | rssi= -74 dBm | channel= 6 | auth=other     | Part
+23 | rssi= -79 dBm | channel= 1 | auth=WPA2      | Devices
+24 | rssi= -79 dBm | channel= 1 | auth=other     | eduroam
+25 | rssi= -80 dBm | channel= 1 | auth=other     | HEIG-VD
+26 | rssi= -80 dBm | channel= 1 | auth=open      | public-HEIG-VD
+27 | rssi= -80 dBm | channel= 1 | auth=other     | Part
+28 | rssi= -81 dBm | channel= 1 | auth=open      | public-HEIG-VD
+29 | rssi= -81 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+30 | rssi= -81 dBm | channel= 6 | auth=other     | Part
+31 | rssi= -82 dBm | channel= 1 | auth=WPA2      | Devices
+32 | rssi= -82 dBm | channel= 1 | auth=other     | Part
+33 | rssi= -86 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+antenne 1mm section 45 mm longeur, 18 mm boucle, 27mm haut
+
+=== wifi_scan:16 ===
+visible_networks:32
+01 | rssi= -46 dBm | channel=11 | auth=other     | Part
+02 | rssi= -47 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -47 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -47 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -47 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -62 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -64 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -64 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -64 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -64 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -64 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -67 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -67 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -67 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -67 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -67 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -71 dBm | channel= 1 | auth=other     | eduroam
+18 | rssi= -71 dBm | channel= 1 | auth=WPA2      | Devices
+19 | rssi= -71 dBm | channel= 1 | auth=other     | HEIG-VD
+20 | rssi= -71 dBm | channel= 1 | auth=open      | public-HEIG-VD
+21 | rssi= -72 dBm | channel= 1 | auth=other     | Part
+22 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+23 | rssi= -73 dBm | channel= 1 | auth=other     | HEIG-VD
+24 | rssi= -73 dBm | channel= 1 | auth=open      | public-HEIG-VD
+25 | rssi= -73 dBm | channel= 1 | auth=other     | Part
+26 | rssi= -73 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+27 | rssi= -73 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+28 | rssi= -74 dBm | channel= 1 | auth=other     | eduroam
+29 | rssi= -80 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+30 | rssi= -80 dBm | channel= 6 | auth=other     | Part
+31 | rssi= -82 dBm | channel= 1 | auth=other     | Part
+32 | rssi= -83 dBm | channel= 1 | auth=WPA2      | Devices
+
+=== wifi_scan:17 ===
+visible_networks:34
+01 | rssi= -45 dBm | channel=11 | auth=other     | Part
+02 | rssi= -46 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -46 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -46 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -46 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -62 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -64 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -64 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -64 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -64 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -64 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -66 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -66 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -66 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -66 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -69 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+18 | rssi= -71 dBm | channel= 1 | auth=other     | eduroam
+19 | rssi= -71 dBm | channel= 1 | auth=WPA2      | Devices
+20 | rssi= -71 dBm | channel= 1 | auth=other     | HEIG-VD
+21 | rssi= -71 dBm | channel= 1 | auth=open      | public-HEIG-VD
+22 | rssi= -71 dBm | channel= 1 | auth=other     | Part
+23 | rssi= -73 dBm | channel= 1 | auth=other     | eduroam
+24 | rssi= -73 dBm | channel= 1 | auth=other     | HEIG-VD
+25 | rssi= -73 dBm | channel= 1 | auth=open      | public-HEIG-VD
+26 | rssi= -73 dBm | channel= 1 | auth=other     | Part
+27 | rssi= -74 dBm | channel= 1 | auth=WPA2      | Devices
+28 | rssi= -75 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+29 | rssi= -79 dBm | channel= 6 | auth=other     | Part
+30 | rssi= -81 dBm | channel= 1 | auth=other     | eduroam
+31 | rssi= -81 dBm | channel= 1 | auth=other     | HEIG-VD
+32 | rssi= -81 dBm | channel= 1 | auth=other     | Part
+33 | rssi= -81 dBm | channel= 1 | auth=open      | public-HEIG-VD
+34 | rssi= -83 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:18 ===
+visible_networks:33
+01 | rssi= -45 dBm | channel=11 | auth=other     | Part
+02 | rssi= -46 dBm | channel=11 | auth=other     | HEIG-VD
+03 | rssi= -46 dBm | channel=11 | auth=open      | public-HEIG-VD
+04 | rssi= -46 dBm | channel=11 | auth=WPA2      | Devices
+05 | rssi= -46 dBm | channel=11 | auth=other     | eduroam
+06 | rssi= -62 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -63 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -64 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -64 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -64 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -64 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -65 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -65 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -65 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -65 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -65 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -69 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+18 | rssi= -72 dBm | channel= 1 | auth=other     | eduroam
+19 | rssi= -72 dBm | channel= 1 | auth=other     | HEIG-VD
+20 | rssi= -72 dBm | channel= 1 | auth=open      | public-HEIG-VD
+21 | rssi= -72 dBm | channel= 1 | auth=other     | Part
+22 | rssi= -72 dBm | channel= 1 | auth=WPA2      | Devices
+23 | rssi= -72 dBm | channel= 1 | auth=other     | eduroam
+24 | rssi= -72 dBm | channel= 1 | auth=other     | HEIG-VD
+25 | rssi= -72 dBm | channel= 1 | auth=open      | public-HEIG-VD
+26 | rssi= -72 dBm | channel= 1 | auth=other     | Part
+27 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+28 | rssi= -78 dBm | channel= 6 | auth=other     | Part
+29 | rssi= -81 dBm | channel= 1 | auth=other     | Part
+30 | rssi= -81 dBm | channel= 1 | auth=WPA2      | Devices
+31 | rssi= -82 dBm | channel= 1 | auth=open      | public-HEIG-VD
+32 | rssi= -82 dBm | channel= 1 | auth=other     | HEIG-VD
+33 | rssi= -82 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:19 ===
+visible_networks:31
+01 | rssi= -45 dBm | channel=11 | auth=other     | Part
+02 | rssi= -46 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -46 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -46 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -46 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -63 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -63 dBm | channel= 6 | auth=other     | Part
+08 | rssi= -64 dBm | channel= 6 | auth=other     | eduroam
+09 | rssi= -64 dBm | channel= 6 | auth=open      | public-HEIG-VD
+10 | rssi= -64 dBm | channel= 6 | auth=WPA2      | Devices
+11 | rssi= -64 dBm | channel= 6 | auth=other     | HEIG-VD
+12 | rssi= -65 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -65 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -65 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -65 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -65 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -72 dBm | channel= 1 | auth=other     | eduroam
+18 | rssi= -72 dBm | channel= 1 | auth=WPA2      | Devices
+19 | rssi= -72 dBm | channel= 1 | auth=other     | HEIG-VD
+20 | rssi= -72 dBm | channel= 1 | auth=open      | public-HEIG-VD
+21 | rssi= -72 dBm | channel= 1 | auth=other     | Part
+22 | rssi= -72 dBm | channel= 1 | auth=other     | HEIG-VD
+23 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+24 | rssi= -73 dBm | channel= 1 | auth=other     | eduroam
+25 | rssi= -73 dBm | channel= 1 | auth=open      | public-HEIG-VD
+26 | rssi= -73 dBm | channel= 1 | auth=other     | Part
+27 | rssi= -73 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+28 | rssi= -80 dBm | channel= 6 | auth=other     | Part
+29 | rssi= -81 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+30 | rssi= -82 dBm | channel= 1 | auth=open      | public-HEIG-VD
+31 | rssi= -82 dBm | channel= 1 | auth=other     | Part
+
+=== wifi_scan:20 ===
+visible_networks:33
+01 | rssi= -45 dBm | channel=11 | auth=other     | Part
+02 | rssi= -46 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -46 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -46 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -46 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -63 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -63 dBm | channel= 6 | auth=other     | Part
+08 | rssi= -63 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -63 dBm | channel= 6 | auth=other     | HEIG-VD
+10 | rssi= -64 dBm | channel= 6 | auth=other     | eduroam
+11 | rssi= -64 dBm | channel= 6 | auth=WPA2      | Devices
+12 | rssi= -66 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -66 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -66 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -66 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -69 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+18 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+19 | rssi= -73 dBm | channel= 1 | auth=other     | eduroam
+20 | rssi= -73 dBm | channel= 1 | auth=other     | HEIG-VD
+21 | rssi= -73 dBm | channel= 1 | auth=open      | public-HEIG-VD
+22 | rssi= -73 dBm | channel= 1 | auth=other     | Part
+23 | rssi= -73 dBm | channel= 1 | auth=other     | eduroam
+24 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+25 | rssi= -73 dBm | channel= 1 | auth=other     | HEIG-VD
+26 | rssi= -73 dBm | channel= 1 | auth=open      | public-HEIG-VD
+27 | rssi= -73 dBm | channel= 1 | auth=other     | Part
+28 | rssi= -74 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+29 | rssi= -75 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+30 | rssi= -81 dBm | channel= 6 | auth=other     | Part
+31 | rssi= -82 dBm | channel= 1 | auth=other     | Part
+32 | rssi= -83 dBm | channel= 1 | auth=other     | eduroam
+33 | rssi= -84 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:21 ===
+visible_networks:36
+01 | rssi= -45 dBm | channel=11 | auth=other     | Part
+02 | rssi= -46 dBm | channel=11 | auth=other     | eduroam
+03 | rssi= -46 dBm | channel=11 | auth=other     | HEIG-VD
+04 | rssi= -46 dBm | channel=11 | auth=open      | public-HEIG-VD
+05 | rssi= -46 dBm | channel=11 | auth=WPA2      | Devices
+06 | rssi= -65 dBm | channel= 6 | auth=other     | eduroam
+07 | rssi= -65 dBm | channel= 6 | auth=open      | public-HEIG-VD
+08 | rssi= -65 dBm | channel= 6 | auth=WPA2      | Devices
+09 | rssi= -65 dBm | channel= 6 | auth=other     | HEIG-VD
+10 | rssi= -65 dBm | channel= 6 | auth=other     | Part
+11 | rssi= -66 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+12 | rssi= -66 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -66 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -66 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -66 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -72 dBm | channel= 1 | auth=other     | eduroam
+18 | rssi= -72 dBm | channel= 1 | auth=other     | Part
+19 | rssi= -72 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+20 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+21 | rssi= -73 dBm | channel= 1 | auth=other     | HEIG-VD
+22 | rssi= -73 dBm | channel= 1 | auth=open      | public-HEIG-VD
+23 | rssi= -74 dBm | channel= 1 | auth=WPA2      | Devices
+24 | rssi= -74 dBm | channel= 1 | auth=other     | eduroam
+25 | rssi= -74 dBm | channel= 1 | auth=other     | HEIG-VD
+26 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+27 | rssi= -74 dBm | channel= 1 | auth=other     | Part
+28 | rssi= -76 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+29 | rssi= -78 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+30 | rssi= -81 dBm | channel= 1 | auth=WPA2      | Devices
+31 | rssi= -81 dBm | channel= 1 | auth=open      | public-HEIG-VD
+32 | rssi= -81 dBm | channel= 1 | auth=other     | Part
+33 | rssi= -81 dBm | channel= 1 | auth=other     | eduroam
+34 | rssi= -81 dBm | channel= 1 | auth=other     | HEIG-VD
+35 | rssi= -81 dBm | channel= 6 | auth=other     | Part
+36 | rssi= -83 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:22 ===
+visible_networks:31
+01 | rssi= -45 dBm | channel=11 | auth=other     | Part
+02 | rssi= -46 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -46 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -46 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -46 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -62 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -64 dBm | channel= 6 | auth=other     | HEIG-VD
+08 | rssi= -64 dBm | channel= 6 | auth=other     | Part
+09 | rssi= -65 dBm | channel= 6 | auth=other     | eduroam
+10 | rssi= -65 dBm | channel= 6 | auth=open      | public-HEIG-VD
+11 | rssi= -65 dBm | channel= 6 | auth=WPA2      | Devices
+12 | rssi= -66 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -66 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -66 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -66 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -72 dBm | channel= 1 | auth=other     | eduroam
+18 | rssi= -72 dBm | channel= 1 | auth=WPA2      | Devices
+19 | rssi= -72 dBm | channel= 1 | auth=other     | HEIG-VD
+20 | rssi= -72 dBm | channel= 1 | auth=open      | public-HEIG-VD
+21 | rssi= -72 dBm | channel= 1 | auth=other     | Part
+22 | rssi= -73 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+23 | rssi= -75 dBm | channel= 1 | auth=other     | eduroam
+24 | rssi= -75 dBm | channel= 1 | auth=other     | HEIG-VD
+25 | rssi= -75 dBm | channel= 1 | auth=open      | public-HEIG-VD
+26 | rssi= -75 dBm | channel= 1 | auth=other     | Part
+27 | rssi= -75 dBm | channel= 1 | auth=WPA2      | Devices
+28 | rssi= -75 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+29 | rssi= -80 dBm | channel= 6 | auth=other     | Part
+30 | rssi= -83 dBm | channel= 1 | auth=other     | Part
+31 | rssi= -83 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:23 ===
+visible_networks:35
+01 | rssi= -45 dBm | channel=11 | auth=other     | Part
+02 | rssi= -46 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -46 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -46 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -46 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -62 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -64 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -65 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -65 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -65 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -65 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -66 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -66 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -66 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -66 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -71 dBm | channel= 1 | auth=WPA2      | Devices
+18 | rssi= -71 dBm | channel= 1 | auth=other     | Part
+19 | rssi= -72 dBm | channel= 1 | auth=other     | eduroam
+20 | rssi= -72 dBm | channel= 1 | auth=other     | HEIG-VD
+21 | rssi= -72 dBm | channel= 1 | auth=open      | public-HEIG-VD
+22 | rssi= -74 dBm | channel= 1 | auth=other     | eduroam
+23 | rssi= -74 dBm | channel= 1 | auth=other     | HEIG-VD
+24 | rssi= -74 dBm | channel= 1 | auth=open      | public-HEIG-VD
+25 | rssi= -74 dBm | channel= 1 | auth=other     | Part
+26 | rssi= -75 dBm | channel= 1 | auth=WPA2      | Devices
+27 | rssi= -75 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+28 | rssi= -76 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+29 | rssi= -79 dBm | channel= 6 | auth=other     | Part
+30 | rssi= -81 dBm | channel= 1 | auth=other     | Part
+31 | rssi= -81 dBm | channel= 1 | auth=other     | eduroam
+32 | rssi= -81 dBm | channel= 1 | auth=other     | HEIG-VD
+33 | rssi= -82 dBm | channel= 1 | auth=WPA2      | Devices
+34 | rssi= -82 dBm | channel= 1 | auth=open      | public-HEIG-VD
+35 | rssi= -84 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+antenne 1mm section 41 mm longeur, 18 mm boucle, 23mm haut
+=== wifi_scan:22 ===
+visible_networks:30
+01 | rssi= -44 dBm | channel=11 | auth=other     | Part
+02 | rssi= -45 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -45 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -45 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -45 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -62 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+08 | rssi= -66 dBm | channel= 6 | auth=WPA2      | Devices
+09 | rssi= -67 dBm | channel= 6 | auth=other     | eduroam
+10 | rssi= -67 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -67 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -67 dBm | channel= 6 | auth=other     | HEIG-VD
+13 | rssi= -67 dBm | channel= 6 | auth=open      | public-HEIG-VD
+14 | rssi= -67 dBm | channel= 6 | auth=other     | eduroam
+15 | rssi= -68 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -68 dBm | channel= 6 | auth=WPA2      | Devices
+17 | rssi= -72 dBm | channel= 1 | auth=other     | eduroam
+18 | rssi= -72 dBm | channel= 1 | auth=open      | public-HEIG-VD
+19 | rssi= -72 dBm | channel= 1 | auth=other     | Part
+20 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+21 | rssi= -73 dBm | channel= 1 | auth=other     | HEIG-VD
+22 | rssi= -74 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+23 | rssi= -76 dBm | channel= 1 | auth=other     | Part
+24 | rssi= -76 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+25 | rssi= -77 dBm | channel= 1 | auth=other     | HEIG-VD
+26 | rssi= -77 dBm | channel= 1 | auth=open      | public-HEIG-VD
+27 | rssi= -77 dBm | channel= 1 | auth=WPA2      | Devices
+28 | rssi= -77 dBm | channel= 1 | auth=other     | eduroam
+29 | rssi= -84 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+30 | rssi= -86 dBm | channel= 1 | auth=other     | Part
+
+=== wifi_scan:23 ===
+visible_networks:30
+01 | rssi= -44 dBm | channel=11 | auth=other     | Part
+02 | rssi= -45 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -45 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -45 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -45 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -63 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -66 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -66 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -66 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -66 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -67 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -67 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -67 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -67 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -67 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -72 dBm | channel= 1 | auth=other     | eduroam
+18 | rssi= -72 dBm | channel= 1 | auth=open      | public-HEIG-VD
+19 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+20 | rssi= -73 dBm | channel= 1 | auth=other     | HEIG-VD
+21 | rssi= -73 dBm | channel= 1 | auth=other     | Part
+22 | rssi= -76 dBm | channel= 1 | auth=WPA2      | Devices
+23 | rssi= -76 dBm | channel= 1 | auth=other     | eduroam
+24 | rssi= -76 dBm | channel= 1 | auth=other     | HEIG-VD
+25 | rssi= -76 dBm | channel= 1 | auth=open      | public-HEIG-VD
+26 | rssi= -76 dBm | channel= 1 | auth=other     | Part
+27 | rssi= -77 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+28 | rssi= -78 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+29 | rssi= -83 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+30 | rssi= -85 dBm | channel= 1 | auth=other     | Part
+
+=== wifi_scan:24 ===
+visible_networks:31
+01 | rssi= -43 dBm | channel=11 | auth=other     | Part
+02 | rssi= -44 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -44 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -44 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -44 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -64 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -65 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -65 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -65 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -65 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -65 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -67 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -67 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -67 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -67 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -67 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -71 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+18 | rssi= -72 dBm | channel= 1 | auth=other     | Part
+19 | rssi= -73 dBm | channel= 1 | auth=other     | eduroam
+20 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+21 | rssi= -73 dBm | channel= 1 | auth=other     | HEIG-VD
+22 | rssi= -73 dBm | channel= 1 | auth=open      | public-HEIG-VD
+23 | rssi= -73 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+24 | rssi= -75 dBm | channel= 1 | auth=open      | public-HEIG-VD
+25 | rssi= -75 dBm | channel= 1 | auth=WPA2      | Devices
+26 | rssi= -75 dBm | channel= 1 | auth=other     | eduroam
+27 | rssi= -76 dBm | channel= 1 | auth=other     | Part
+28 | rssi= -76 dBm | channel= 1 | auth=other     | HEIG-VD
+29 | rssi= -78 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+30 | rssi= -82 dBm | channel= 6 | auth=other     | Part
+31 | rssi= -84 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:25 ===
+visible_networks:28
+01 | rssi= -43 dBm | channel=11 | auth=other     | Part
+02 | rssi= -44 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -44 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -44 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -44 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -63 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -65 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -65 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -65 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -65 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -66 dBm | channel= 6 | auth=other     | eduroam
+12 | rssi= -66 dBm | channel= 6 | auth=WPA2      | Devices
+13 | rssi= -66 dBm | channel= 6 | auth=other     | HEIG-VD
+14 | rssi= -66 dBm | channel= 6 | auth=open      | public-HEIG-VD
+15 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+16 | rssi= -66 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -71 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+18 | rssi= -73 dBm | channel= 1 | auth=other     | eduroam
+19 | rssi= -73 dBm | channel= 1 | auth=WPA2      | Devices
+20 | rssi= -73 dBm | channel= 1 | auth=open      | public-HEIG-VD
+21 | rssi= -73 dBm | channel= 1 | auth=other     | Part
+22 | rssi= -74 dBm | channel= 1 | auth=other     | HEIG-VD
+23 | rssi= -75 dBm | channel= 1 | auth=other     | eduroam
+24 | rssi= -76 dBm | channel= 1 | auth=WPA2      | Devices
+25 | rssi= -76 dBm | channel= 1 | auth=other     | HEIG-VD
+26 | rssi= -76 dBm | channel= 1 | auth=open      | public-HEIG-VD
+27 | rssi= -76 dBm | channel= 1 | auth=other     | Part
+28 | rssi= -84 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+
+
+
+antenne 1mm section 41 mm longeur, 18 mm boucle, 23mm haut, antenne couchée
+
+visible_networks:23
+01 | rssi= -54 dBm | channel=11 | auth=WPA2      | Devices
+02 | rssi= -54 dBm | channel=11 | auth=other     | eduroam
+03 | rssi= -54 dBm | channel=11 | auth=other     | HEIG-VD
+04 | rssi= -54 dBm | channel=11 | auth=other     | Part
+05 | rssi= -55 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -66 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -79 dBm | channel= 6 | auth=other     | HEIG-VD
+08 | rssi= -79 dBm | channel= 6 | auth=other     | eduroam
+09 | rssi= -79 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -80 dBm | channel= 1 | auth=other     | eduroam
+11 | rssi= -80 dBm | channel= 1 | auth=WPA2      | Devices
+12 | rssi= -80 dBm | channel= 1 | auth=other     | HEIG-VD
+13 | rssi= -80 dBm | channel= 1 | auth=open      | public-HEIG-VD
+14 | rssi= -80 dBm | channel= 1 | auth=other     | Part
+15 | rssi= -80 dBm | channel= 6 | auth=other     | Part
+16 | rssi= -80 dBm | channel= 6 | auth=open      | public-HEIG-VD
+17 | rssi= -81 dBm | channel= 1 | auth=WPA2      | Devices
+18 | rssi= -82 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+19 | rssi= -83 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+20 | rssi= -84 dBm | channel= 1 | auth=other     | Part
+21 | rssi= -84 dBm | channel= 6 | auth=other     | Part
+22 | rssi= -85 dBm | channel= 1 | auth=other     | Part
+23 | rssi= -92 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:23 ===
+visible_networks:25
+01 | rssi= -51 dBm | channel=11 | auth=WPA2      | Devices
+02 | rssi= -51 dBm | channel=11 | auth=other     | eduroam
+03 | rssi= -51 dBm | channel=11 | auth=other     | HEIG-VD
+04 | rssi= -51 dBm | channel=11 | auth=other     | Part
+05 | rssi= -51 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -66 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -68 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -68 dBm | channel= 6 | auth=other     | HEIG-VD
+09 | rssi= -69 dBm | channel= 6 | auth=open      | public-HEIG-VD
+10 | rssi= -69 dBm | channel= 6 | auth=WPA2      | Devices
+11 | rssi= -69 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -75 dBm | channel= 6 | auth=WPA2      | Devices
+13 | rssi= -75 dBm | channel= 6 | auth=other     | HEIG-VD
+14 | rssi= -76 dBm | channel= 6 | auth=other     | eduroam
+15 | rssi= -76 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -76 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -80 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+18 | rssi= -81 dBm | channel= 1 | auth=other     | Part
+19 | rssi= -82 dBm | channel= 1 | auth=other     | eduroam
+20 | rssi= -82 dBm | channel= 1 | auth=WPA2      | Devices
+21 | rssi= -82 dBm | channel= 1 | auth=other     | HEIG-VD
+22 | rssi= -82 dBm | channel= 1 | auth=open      | public-HEIG-VD
+23 | rssi= -83 dBm | channel= 1 | auth=other     | Part
+24 | rssi= -84 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+25 | rssi= -86 dBm | channel= 1 | auth=other     | Part
+
+=== wifi_scan:24 ===
+visible_networks:26
+01 | rssi= -59 dBm | channel=11 | auth=other     | Part
+02 | rssi= -60 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -60 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -60 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -60 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -64 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -69 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -69 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -69 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -69 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -69 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -75 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -75 dBm | channel= 6 | auth=WPA2      | Devices
+14 | rssi= -75 dBm | channel= 6 | auth=other     | HEIG-VD
+15 | rssi= -75 dBm | channel= 6 | auth=open      | public-HEIG-VD
+16 | rssi= -75 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -79 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+18 | rssi= -82 dBm | channel= 1 | auth=other     | eduroam
+19 | rssi= -82 dBm | channel= 1 | auth=WPA2      | Devices
+20 | rssi= -82 dBm | channel= 1 | auth=other     | HEIG-VD
+21 | rssi= -82 dBm | channel= 1 | auth=open      | public-HEIG-VD
+22 | rssi= -82 dBm | channel= 1 | auth=other     | Part
+23 | rssi= -82 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+24 | rssi= -84 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+25 | rssi= -85 dBm | channel= 1 | auth=other     | Part
+26 | rssi= -85 dBm | channel= 1 | auth=other     | Part
+
+=== wifi_scan:25 ===
+visible_networks:26
+01 | rssi= -52 dBm | channel=11 | auth=other     | Part
+02 | rssi= -53 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -53 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -53 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -53 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -65 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+07 | rssi= -70 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -70 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -70 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -70 dBm | channel= 6 | auth=other     | HEIG-VD
+11 | rssi= -70 dBm | channel= 6 | auth=other     | Part
+12 | rssi= -74 dBm | channel= 6 | auth=other     | Part
+13 | rssi= -75 dBm | channel= 6 | auth=open      | public-HEIG-VD
+14 | rssi= -75 dBm | channel= 6 | auth=other     | eduroam
+15 | rssi= -75 dBm | channel= 6 | auth=WPA2      | Devices
+16 | rssi= -75 dBm | channel= 6 | auth=other     | HEIG-VD
+17 | rssi= -77 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+18 | rssi= -82 dBm | channel= 1 | auth=open      | public-HEIG-VD
+19 | rssi= -82 dBm | channel= 1 | auth=other     | Part
+20 | rssi= -82 dBm | channel= 1 | auth=WPA2      | Devices
+21 | rssi= -82 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+22 | rssi= -83 dBm | channel= 1 | auth=other     | eduroam
+23 | rssi= -83 dBm | channel= 1 | auth=other     | HEIG-VD
+24 | rssi= -84 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+25 | rssi= -85 dBm | channel= 1 | auth=other     | Part
+26 | rssi= -85 dBm | channel= 1 | auth=other     | Part
+
+
+antenne 1mm section 41 mm longeur, 18 mm boucle, 23mm haut, antenne couchée, boite fermée
+
+=== wifi_scan:24 ===
+visible_networks:19
+01 | rssi= -60 dBm | channel=11 | auth=other     | Part
+02 | rssi= -61 dBm | channel=11 | auth=other     | eduroam
+03 | rssi= -61 dBm | channel=11 | auth=other     | HEIG-VD
+04 | rssi= -61 dBm | channel=11 | auth=open      | public-HEIG-VD
+05 | rssi= -62 dBm | channel=11 | auth=WPA2      | Devices
+06 | rssi= -77 dBm | channel= 6 | auth=other     | eduroam
+07 | rssi= -77 dBm | channel= 6 | auth=WPA2      | Devices
+08 | rssi= -77 dBm | channel= 6 | auth=other     | HEIG-VD
+09 | rssi= -77 dBm | channel= 6 | auth=other     | Part
+10 | rssi= -78 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+11 | rssi= -78 dBm | channel= 6 | auth=open      | public-HEIG-VD
+12 | rssi= -80 dBm | channel= 6 | auth=other     | HEIG-VD
+13 | rssi= -80 dBm | channel= 6 | auth=open      | public-HEIG-VD
+14 | rssi= -80 dBm | channel= 6 | auth=other     | Part
+15 | rssi= -80 dBm | channel= 6 | auth=WPA2      | Devices
+16 | rssi= -81 dBm | channel= 6 | auth=other     | eduroam
+17 | rssi= -85 dBm | channel= 1 | auth=other     | Part
+18 | rssi= -87 dBm | channel= 1 | auth=other     | Part
+19 | rssi= -87 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+
+=== wifi_scan:25 ===
+visible_networks:20
+01 | rssi= -60 dBm | channel=11 | auth=other     | Part
+02 | rssi= -62 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -62 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -62 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -62 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -76 dBm | channel= 6 | auth=other     | HEIG-VD
+07 | rssi= -77 dBm | channel= 6 | auth=other     | eduroam
+08 | rssi= -77 dBm | channel= 6 | auth=open      | public-HEIG-VD
+09 | rssi= -77 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -77 dBm | channel= 6 | auth=other     | Part
+11 | rssi= -78 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+12 | rssi= -80 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -81 dBm | channel= 6 | auth=other     | HEIG-VD
+14 | rssi= -81 dBm | channel= 6 | auth=open      | public-HEIG-VD
+15 | rssi= -82 dBm | channel= 6 | auth=WPA2      | Devices
+16 | rssi= -82 dBm | channel= 6 | auth=other     | Part
+17 | rssi= -84 dBm | channel= 1 | auth=other     | Part
+18 | rssi= -86 dBm | channel= 1 | auth=other     | Part
+19 | rssi= -87 dBm | channel= 1 | auth=other     | Part
+20 | rssi= -89 dBm | channel= 9 | auth=WPA2      | RUT241_DD92
+
+=== wifi_scan:26 ===
+visible_networks:20
+01 | rssi= -60 dBm | channel=11 | auth=other     | Part
+02 | rssi= -62 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -62 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -62 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -62 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -76 dBm | channel= 6 | auth=other     | eduroam
+07 | rssi= -76 dBm | channel= 6 | auth=open      | public-HEIG-VD
+08 | rssi= -76 dBm | channel= 6 | auth=other     | HEIG-VD
+09 | rssi= -77 dBm | channel= 6 | auth=WPA2      | Devices
+10 | rssi= -77 dBm | channel= 6 | auth=other     | Part
+11 | rssi= -79 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+12 | rssi= -81 dBm | channel= 6 | auth=other     | HEIG-VD
+13 | rssi= -81 dBm | channel= 6 | auth=other     | Part
+14 | rssi= -82 dBm | channel= 6 | auth=other     | eduroam
+15 | rssi= -82 dBm | channel= 6 | auth=WPA2      | Devices
+16 | rssi= -82 dBm | channel= 6 | auth=open      | public-HEIG-VD
+17 | rssi= -85 dBm | channel= 1 | auth=other     | Part
+18 | rssi= -87 dBm | channel= 1 | auth=other     | Part
+19 | rssi= -90 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+20 | rssi= -93 dBm | channel= 6 | auth=WPA2      | TurboCrop_Connect
+
+=== wifi_scan:27 ===
+visible_networks:21
+01 | rssi= -61 dBm | channel=11 | auth=other     | Part
+02 | rssi= -62 dBm | channel=11 | auth=WPA2      | Devices
+03 | rssi= -62 dBm | channel=11 | auth=other     | eduroam
+04 | rssi= -62 dBm | channel=11 | auth=other     | HEIG-VD
+05 | rssi= -62 dBm | channel=11 | auth=open      | public-HEIG-VD
+06 | rssi= -76 dBm | channel= 6 | auth=other     | eduroam
+07 | rssi= -76 dBm | channel= 6 | auth=open      | public-HEIG-VD
+08 | rssi= -76 dBm | channel= 6 | auth=WPA2      | Devices
+09 | rssi= -76 dBm | channel= 6 | auth=other     | HEIG-VD
+10 | rssi= -76 dBm | channel= 6 | auth=other     | Part
+11 | rssi= -79 dBm | channel= 1 | auth=WPA/WPA2  | Gateway_F8BAE5
+12 | rssi= -81 dBm | channel= 6 | auth=other     | eduroam
+13 | rssi= -81 dBm | channel= 6 | auth=open      | public-HEIG-VD
+14 | rssi= -81 dBm | channel= 6 | auth=other     | Part
+15 | rssi= -82 dBm | channel= 6 | auth=WPA2      | Devices
+16 | rssi= -82 dBm | channel= 6 | auth=other     | HEIG-VD
+17 | rssi= -85 dBm | channel= 1 | auth=other     | Part
+18 | rssi= -89 dBm | channel= 1 | auth=other     | Part
+19 | rssi= -89 dBm | channel= 1 | auth=other     | Part
+20 | rssi= -89 dBm | channel= 5 | auth=WPA2      | ZyXEL WAP3205 v3
+21 | rssi= -90 dBm | channel= 3 | auth=WPA2      | WIFI-Sauter-MCR
+PS C:\Users\jason\Workspace\Starter\code\bracelet> 

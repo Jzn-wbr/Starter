@@ -34,8 +34,8 @@ note right
   alarm_plan revision has been loaded.
 end note
 
-Station -> Bracelet : protocol v3 station_control announcement\nUDP subnet broadcast on port 42100
-Bracelet -> Station : protocol v3 bracelet_status unicast
+Station -> Bracelet : protocol v4 station_control announcement\nUDP subnet broadcast on port 42100
+Bracelet -> Station : protocol v4 bracelet_status unicast\nincluding connected Wi-Fi RSSI
 Station -> Station : persist first valid bracelet MAC in NVS
 Bracelet -> Bracelet : persist first valid station MAC in NVS
 
@@ -52,7 +52,7 @@ end
 loop every 10 seconds while connected
   Station -> Supabase : refresh alarm_plan and alarm_audio_selection
   Station -> Supabase : publish station_status with minimal response\nwith station_battery_voltage from GPIO34
-  Station -> Supabase : publish bracelet_status with minimal response\nwithout high-rate energy graph streaming
+  Station -> Supabase : publish bracelet_status with minimal response\nincluding current Wi-Fi RSSI when recently seen
 end
 note right
   During active remote audio streaming, periodic

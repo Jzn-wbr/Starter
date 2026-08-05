@@ -134,6 +134,7 @@ create table if not exists bracelet_status (
   problem_code problem_code_v1 not null default 'none',
   problem_message text not null default '',
   bracelet_battery_voltage numeric(5,3),
+  bracelet_wifi_rssi_dbm smallint,
   bracelet_last_seen_ms bigint check (
     bracelet_last_seen_ms is null or bracelet_last_seen_ms >= 0
   ),
@@ -168,6 +169,9 @@ alter table bracelet_status
   add column if not exists bracelet_battery_voltage numeric(5,3);
 
 alter table bracelet_status
+  add column if not exists bracelet_wifi_rssi_dbm smallint;
+
+alter table bracelet_status
   drop column if exists bracelet_battery_percent;
 
 alter table bracelet_status
@@ -195,6 +199,15 @@ alter table bracelet_status
   add constraint bracelet_status_battery_voltage_range check (
     bracelet_battery_voltage is null
     or bracelet_battery_voltage between 0 and 6
+  );
+
+alter table bracelet_status
+  drop constraint if exists bracelet_status_wifi_rssi_range;
+
+alter table bracelet_status
+  add constraint bracelet_status_wifi_rssi_range check (
+    bracelet_wifi_rssi_dbm is null
+    or bracelet_wifi_rssi_dbm between -127 and -1
   );
 
 alter table bracelet_status

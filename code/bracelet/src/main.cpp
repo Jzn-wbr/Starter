@@ -449,6 +449,7 @@ namespace
             if (strlen(ssids[wifiNetworkIndex]) > 0)
             {
                 Serial.printf("wifi_connecting:%s\n", ssids[wifiNetworkIndex]);
+                WiFi.setSleep(false);
                 WiFi.disconnect();
                 const int networkCountFound = WiFi.scanNetworks(false, true);
                 bool configuredNetworkFound = false;
@@ -618,6 +619,9 @@ namespace
         packet.activityScore = static_cast<uint8_t>(constrain(energyTracker.lastEnergy / 40, 0UL, 100UL));
         packet.validated = 0;
         packet.batteryVoltageMv = batteryVoltage > 0.1F ? static_cast<uint16_t>(roundf(batteryVoltage * 1000.0F)) : 0;
+        packet.wifiRssiDbm = WiFi.status() == WL_CONNECTED
+                                 ? static_cast<int8_t>(constrain(WiFi.RSSI(), -127, -1))
+                                 : BraceletStationProtocol::WIFI_RSSI_UNKNOWN_DBM;
         packet.faultCode = static_cast<uint8_t>(nextProblemCode);
         packet.flags = nextFlags;
         packet.energy = energyTracker.lastEnergy;
@@ -840,7 +844,7 @@ void setup()
     WiFi.mode(WIFI_STA);
     WiFi.onEvent(onWifiEvent);
     WiFi.macAddress(deviceId);
-    WiFi.setSleep(true);
+    WiFi.setSleep(false);
     Serial.print("bracelet_mac:");
     Serial.println(WiFi.macAddress());
     loadPairedStation();

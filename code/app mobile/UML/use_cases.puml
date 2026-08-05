@@ -19,6 +19,7 @@ rectangle "Wake-up PWA" {
   usecase "View bracelet status summary" as ViewBraceletStatus
   usecase "Open station details" as ViewStationDetails
   usecase "Open bracelet details" as ViewBraceletDetails
+  usecase "View bracelet Wi-Fi RSSI" as ViewBraceletRssi
   usecase "Receive automatic updates" as ReceiveUpdates
 }
 
@@ -47,6 +48,7 @@ User --> ViewStationStatus
 User --> ViewBraceletStatus
 User --> ViewStationDetails
 User --> ViewBraceletDetails
+ViewBraceletDetails --> ViewBraceletRssi
 ReceiveUpdates --> ViewStationStatus
 ReceiveUpdates --> ViewBraceletStatus
 
@@ -65,6 +67,7 @@ ViewStationStatus --> ExposeStationStatus
 ViewBraceletStatus --> ExposeBraceletStatus
 ViewStationDetails --> ExposeStationStatus
 ViewBraceletDetails --> ExposeBraceletStatus
+ViewBraceletRssi --> ExposeBraceletStatus
 ExposeStationStatus --> PublishRealtime
 ExposeBraceletStatus --> PublishRealtime
 StoreAlarmPlan --> PublishRealtime
@@ -85,8 +88,9 @@ note bottom of "Wake-up PWA"
   creation controls. The controls return after removal or expiry.
   Supabase realtime updates refresh changed blocks automatically.
   Station and bracelet cards show state and battery percent calculated from voltage.
-  Opening a card shows error message, updated_at, and raw battery voltage.
-  Status polling remains a visible-page fallback.
+  Opening technical details shows diagnostics, raw battery voltage,
+  and the latest RSSI reported by the bracelet on its connected Wi-Fi.
+  Realtime is preferred; status polling remains a 30-second visible-page fallback.
 end note
 
 @enduml

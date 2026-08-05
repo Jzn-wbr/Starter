@@ -1,0 +1,401 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[a4paper,margin=16mm,top=14mm,bottom=15mm]{geometry}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{tcolorbox}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage[hidelinks]{hyperref}
+\usepackage{siunitx}
+
+\pgfplotsset{compat=1.18}
+\sisetup{locale=FR,output-decimal-marker={,}}
+\definecolor{navy}{HTML}{17365D}
+\definecolor{blue}{HTML}{1976A3}
+\definecolor{cyan}{HTML}{20A4C7}
+\definecolor{green}{HTML}{16856B}
+\definecolor{orange}{HTML}{E58B2A}
+\definecolor{red}{HTML}{C94B4B}
+\definecolor{ink}{HTML}{243447}
+\definecolor{muted}{HTML}{637381}
+\definecolor{paper}{HTML}{F4F7FA}
+\definecolor{line}{HTML}{D8E1E8}
+
+\hypersetup{pdftitle={Comparaison des antennes Wi-Fi du bracelet},pdfauthor={Projet bracelet}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlength{\headheight}{21pt}
+\setlist[itemize]{leftmargin=5mm,itemsep=2pt,topsep=2pt}
+\renewcommand{\arraystretch}{1.16}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{muted}BRACELET \textbullet{} ÉVALUATION RF}
+\fancyhead[R]{\small\color{muted}04 août 2026}
+\fancyfoot[L]{\small\color{muted}Analyse des scans Wi-Fi 2,4 GHz}
+\fancyfoot[R]{\small\color{muted}\thepage/\pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{line}\leaders\hrule height \headrulewidth\hfill}}
+
+\newcommand{\sectiontitle}[2]{%
+  {\color{navy}\fontsize{19}{21}\selectfont\bfseries #1}\par
+  {\color{muted}\small #2}\par\vspace{4pt}
+  {\color{cyan}\rule{19mm}{2pt}}\vspace{5pt}
+}
+\newcommand{\metric}[3]{%
+\begin{tcolorbox}[boxrule=0pt,arc=2mm,colback=#1!7,left=3mm,right=3mm,top=2mm,bottom=2mm]
+{\color{#1}\fontsize{18}{19}\selectfont\bfseries #2}\par
+{\color{muted}\footnotesize #3}
+\end{tcolorbox}}
+\newtcolorbox{decisionbox}{colback=green!6,colframe=green,boxrule=.7pt,arc=2mm,left=4mm,right=4mm,top=3mm,bottom=3mm}
+\newtcolorbox{warningbox}{colback=orange!7,colframe=orange,boxrule=.7pt,arc=2mm,left=4mm,right=4mm,top=3mm,bottom=3mm}
+
+\begin{document}
+
+% --- Page 1 ---------------------------------------------------------------
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture,overlay]
+  \fill[navy] (current page.north west) rectangle ([yshift=-58mm]current page.north east);
+  \fill[cyan] ([yshift=-58mm]current page.north west) rectangle ([yshift=-61mm]current page.north east);
+  \draw[cyan!35,line width=.6pt] ([xshift=-40mm,yshift=-18mm]current page.north east) circle (19mm);
+  \draw[cyan!35,line width=.6pt] ([xshift=-40mm,yshift=-18mm]current page.north east) circle (12mm);
+  \fill[cyan] ([xshift=-40mm,yshift=-18mm]current page.north east) circle (2mm);
+\end{tikzpicture}
+\vspace*{5mm}
+{\color{cyan}\small\bfseries RAPPORT D'ESSAIS \textbullet{} WI-FI 2,4 GHz}\par
+\vspace{7mm}
+{\color{white}\fontsize{27}{30}\selectfont\bfseries Comparaison des antennes\\du bracelet}\par
+\vspace{4mm}
+{\color{white!78}\large Analyse quantitative, tendances et recommandation de conception}\par
+\vspace{18mm}
+
+\begin{decisionbox}
+{\color{green}\large\bfseries Décision sur les données actuelles : antenne 50 mm, verticale}\par
+Elle offre le meilleur ensemble de résultats : niveau des signaux dominants, réception des points d'accès éloignés et régularité. La \textbf{45 mm} est le meilleur compromis si l'encombrement impose une réduction. La décision reste à confirmer \textbf{boîtier fermé et au poignet}, conditions non mesurées pour ces deux candidates.
+\end{decisionbox}
+
+\begin{minipage}[t]{0.32\textwidth}
+\metric{blue}{39}{scans analysés}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.32\textwidth}
+\metric{cyan}{1\,043}{détections Wi-Fi}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.32\textwidth}
+\metric{green}{+34,2 dB}{gain 50 mm vs origine\newline(moyenne du top 5)}
+\end{minipage}
+
+\vspace{3mm}
+\begin{tcolorbox}[colback=paper,colframe=line,boxrule=.5pt,arc=2mm,title={\color{navy}\bfseries Lecture en 30 secondes},fonttitle=\small]
+\begin{itemize}
+  \item \textbf{50 mm :} 33,6 réseaux par scan et top 5 à \(-44,2\) dBm ; meilleur choix radio global.
+  \item \textbf{45 mm :} 33,1 réseaux et top 5 à \(-45,9\) dBm ; seulement 1,7 dB derrière sur les signaux dominants, mais 3,6 dB derrière sur la passerelle de référence.
+  \item \textbf{41 mm verticale :} très bon signal proche, mais moins de réseaux (29,8) et réception distante moins convaincante.
+  \item \textbf{Intégration :} la 41 mm perd 10,2 dB couchée, puis encore 7,1 dB avec le boîtier fermé sur l'indicateur top 5.
+\end{itemize}
+\end{tcolorbox}
+
+\vfill
+{\color{muted}\small Source : \texttt{app mobile/mesures.txt} \textbullet{} Conditions déclarées identiques sauf mention contraire \textbullet{} RSSI en dBm (moins négatif = meilleur)}
+\newpage
+
+% --- Page 2 ---------------------------------------------------------------
+\sectiontitle{1. Protocole et méthode}{Une comparaison centrée sur la qualité de réception et la robustesse de la décision}
+
+\begin{minipage}[t]{0.49\textwidth}
+\textbf{Configurations étudiées}
+\begin{itemize}
+  \item antenne d'origine : 6 scans ;
+  \item fil de section 1 mm, boucle 18 mm : longueurs 50, 48, 45 et 41 mm, en position verticale ;
+  \item antenne 41 mm couchée ;
+  \item antenne 41 mm couchée, boîtier fermé.
+\end{itemize}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\textbf{Échantillonnage}
+\begin{itemize}
+  \item 39 scans au total, groupes de 4 à 9 scans ;
+  \item environnement et conditions annoncés identiques ;
+  \item chaque ligne fournit SSID, canal et RSSI ;
+  \item aucune adresse BSSID ni mesure d'émission n'est fournie.
+\end{itemize}
+\end{minipage}
+
+\vspace{2mm}
+\textbf{Indicateurs retenus}\par\smallskip
+\begin{tabularx}{\textwidth}{>{\bfseries\color{navy}}p{31mm} Y p{43mm}}
+\toprule
+Indicateur & Rôle dans la décision & Précaution d'interprétation \\
+\midrule
+Réseaux visibles & Couverture et capacité à détecter des signaux faibles & Dépend de l'occupation radio instantanée \\
+Moyenne du top 5 & Qualité des cinq meilleures réceptions de chaque scan & Plus robuste que la moyenne de toutes les lignes \\
+Points d'accès repères & Comparaison de liens identifiables par SSID et canal & Un SSID peut regrouper plusieurs BSSID \\
+Écart-type entre scans & Répétabilité à court terme & Les groupes n'ont pas tous la même taille \\
+Taux de détection & Robustesse sur les réseaux faibles & Sensible au seuil et aux trames diffusées \\
+\bottomrule
+\end{tabularx}
+
+\vspace{5mm}
+\begin{warningbox}
+\textbf{Pourquoi la moyenne de tous les RSSI serait trompeuse.} Une meilleure antenne détecte davantage de réseaux faibles ; ces nouvelles valeurs très négatives peuvent dégrader sa moyenne brute. Le rapport privilégie donc le top 5, les points d'accès repères et le nombre de réseaux.
+\end{warningbox}
+
+\vspace{3mm}
+\textbf{Limites à conserver dans la décision}
+\begin{itemize}
+  \item Il s'agit de \textbf{scans en réception}. Ils ne mesurent ni débit, ni pertes UDP, ni latence, ni puissance effectivement rayonnée.
+  \item L'absence de BSSID empêche d'identifier sans ambiguïté les différents points d'accès portant le même SSID.
+  \item Une seule géométrie (41 mm) est mesurée couchée et boîtier fermé ; l'effet du boîtier ne peut pas être transposé exactement aux autres longueurs.
+  \item Le corps, la batterie, le mouvement et l'orientation du poignet peuvent désaccorder l'antenne. La recommandation est donc une \textbf{sélection pour le prochain prototype}, pas une validation RF finale.
+\end{itemize}
+
+\begin{tcolorbox}[colback=blue!5,colframe=blue!35,boxrule=.5pt,arc=2mm]
+\textbf{Convention :} un RSSI plus proche de 0 est meilleur. Un écart de 3 dB correspond approximativement à un facteur 2 de puissance reçue ; cette conversion reste indicative car les RSSI embarqués ne sont pas des mesures de laboratoire calibrées.
+\end{tcolorbox}
+\newpage
+
+% --- Page 3 ---------------------------------------------------------------
+\sectiontitle{2. Résultats globaux}{Les trois meilleures géométries détectent environ 33 réseaux, mais leur qualité de signal diffère}
+
+\begin{minipage}[t]{0.51\textwidth}
+\centering
+\textbf{Réseaux visibles par scan}\par\smallskip
+\begin{tikzpicture}
+\begin{axis}[
+  width=.95\linewidth,height=58mm,
+  xbar,xmin=0,xmax=40,
+  symbolic y coords={Origine,50 mm,48 mm,45 mm,41 mm,41 couchée,41 boîte},
+  ytick=data,y dir=reverse,
+  xlabel={moyenne},
+  nodes near coords,nodes near coords align={horizontal},
+  every node near coord/.append style={font=\scriptsize},
+  tick label style={font=\scriptsize},label style={font=\scriptsize},
+  axis line style={draw=line},grid=major,grid style={draw=line!70},
+  bar width=4.2mm,enlarge y limits=.12]
+\addplot[fill=blue,draw=none] coordinates {(7.00,Origine) (33.56,50 mm) (33.75,48 mm) (33.12,45 mm) (29.75,41 mm) (25.00,41 couchée) (20.00,41 boîte)};
+\end{axis}
+\end{tikzpicture}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.47\textwidth}
+\centering
+\textbf{Moyenne des cinq meilleurs RSSI}\par\smallskip
+\begin{tikzpicture}
+\begin{axis}[
+  width=.95\linewidth,height=58mm,
+  xmin=-85,xmax=-38,
+  symbolic y coords={Origine,50 mm,48 mm,45 mm,41 mm,41 couchée,41 boîte},
+  ytick=data,y dir=reverse,
+  xlabel={RSSI (dBm) \quad meilleur $\rightarrow$},
+  nodes near coords,nodes near coords align={horizontal},
+  every node near coord/.append style={font=\scriptsize},
+  tick label style={font=\scriptsize},label style={font=\scriptsize},
+  axis line style={draw=line},grid=major,grid style={draw=line!70},
+  enlarge y limits=.12]
+\addplot[only marks,mark=*,mark size=2.4pt,color=green] coordinates {(-78.43,Origine) (-44.24,50 mm) (-54.10,48 mm) (-45.92,45 mm) (-44.30,41 mm) (-54.45,41 couchée) (-61.50,41 boîte)};
+\end{axis}
+\end{tikzpicture}
+\end{minipage}
+
+\vspace{3mm}
+\begin{tabularx}{\textwidth}{>{\bfseries}l C{13mm} C{24mm} C{23mm} C{20mm} Y}
+\toprule
+Configuration & \(n\) & Réseaux \(\mu\pm s\) & Top 5 \(\mu\pm s\) & Plus fort & Lecture \\
+\midrule
+Origine & 6 & 7,0 $\pm$ 0,6 & $-78,4\pm0,6$ & $-77,8$ & Référence très faible \\
+\rowcolor{green!7} 50 mm verticale & 9 & 33,6 $\pm$ 3,5 & $-44,2\pm0,8$ & $-43,3$ & \textbf{Meilleur ensemble} \\
+48 mm verticale & 4 & 33,8 $\pm$ 1,0 & $-54,1\pm2,1$ & $-53,0$ & Détection élevée, signal proche atypiquement faible \\
+45 mm verticale & 8 & 33,1 $\pm$ 1,8 & $-45,9\pm0,4$ & $-45,1$ & \textbf{Meilleur compromis compact} \\
+41 mm verticale & 4 & 29,8 $\pm$ 1,3 & $-44,3\pm0,6$ & $-43,5$ & Excellent proche, recul en couverture \\
+41 mm couchée & 4 & 25,0 $\pm$ 1,4 & $-54,5\pm3,8$ & $-54,0$ & Orientation pénalisante \\
+41 mm couchée, boîte & 4 & 20,0 $\pm$ 0,8 & $-61,5\pm0,4$ & $-60,3$ & Intégration très pénalisante \\
+\bottomrule
+\end{tabularx}
+
+\vspace{4mm}
+\begin{decisionbox}
+\textbf{Interprétation.} Le nombre de réseaux seul placerait la 48 mm légèrement devant la 50 mm (0,2 réseau, non significatif au regard de la variabilité). Les signaux dominants donnent toutefois un avantage de \textbf{9,9 dB} à la 50 mm. Le choix doit donc reposer sur plusieurs indicateurs, pas sur le seul compteur de réseaux.
+\end{decisionbox}
+\newpage
+
+% --- Page 4 ---------------------------------------------------------------
+\sectiontitle{3. Comparaison sur des points d'accès repères}{La 50 mm conserve son avantage sur les liens proches comme sur les liens plus difficiles}
+
+\begin{minipage}[t]{0.58\textwidth}
+\centering
+\textbf{RSSI moyen lorsque le repère est détecté}\par
+\begin{tikzpicture}
+\begin{axis}[
+  width=.96\linewidth,height=76mm,
+  ybar,bar width=2.6mm,
+  ymin=-100,ymax=-35,
+  ylabel={RSSI moyen (dBm)},
+  symbolic x coords={Dev11,Gateway,Dev6,ZyXEL,Sauter},xtick=data,
+  xticklabels={Devices c.11,Gateway c.1,Devices c.6,ZyXEL c.5,Sauter c.3},
+  x tick label style={font=\scriptsize,rotate=24,anchor=east},
+  tick label style={font=\scriptsize},label style={font=\scriptsize},
+  grid=major,grid style={draw=line!70},axis line style={draw=line},
+  legend style={font=\scriptsize,at={(0.5,1.03)},anchor=south,legend columns=4,draw=none}]
+\addplot[fill=navy,draw=none] coordinates {(Dev11,-44.6) (Gateway,-59.1) (Dev6,-63.6) (ZyXEL,-68.5) (Sauter,-71.5)};
+\addplot[fill=cyan,draw=none] coordinates {(Dev11,-54.2) (Gateway,-65.0) (Dev6,-65.2) (ZyXEL,-68.2) (Sauter,-74.3)};
+\addplot[fill=green,draw=none] coordinates {(Dev11,-46.1) (Gateway,-62.8) (Dev6,-64.4) (ZyXEL,-71.6) (Sauter,-74.4)};
+\addplot[fill=orange,draw=none] coordinates {(Dev11,-44.5) (Gateway,-63.0) (Dev6,-65.5) (ZyXEL,-73.5) (Sauter,-74.0)};
+\legend{50 mm,48 mm,45 mm,41 mm}
+\end{axis}
+\end{tikzpicture}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.39\textwidth}
+\textbf{Ce que montrent les repères}
+\begin{itemize}
+  \item Sur \textit{Devices} canal 11, la 50 mm et la 41 mm sont à égalité pratique ; la 45 mm suit à 1,5 dB.
+  \item Sur \textit{Gateway}, la 50 mm gagne 3,6 dB face à la 45 mm et 3,9 dB face à la 41 mm.
+  \item Sur \textit{ZyXEL}, la 50 mm est détectée 8 fois sur 9 ; la 45 mm seulement 5 fois sur 8, la 41 mm 2 fois sur 4.
+  \item La 48 mm reçoit bien certains liens distants, mais perd près de 10 dB sur le point d'accès dominant du canal 11. Ce comportement mérite un nouveau test.
+\end{itemize}
+\end{minipage}
+
+\vspace{4mm}
+\begin{tabularx}{\textwidth}{>{\bfseries}l C{21mm} C{21mm} C{21mm} C{21mm} Y}
+\toprule
+Configuration & Devices c.11 & Gateway c.1 & Devices c.6 & ZyXEL c.5 & Détection ZyXEL / Sauter \\
+\midrule
+50 mm & $-44,6$ & $-59,1$ & $-63,6$ & $-68,5$ & 8/9 \quad / \quad 8/9 \\
+48 mm & $-54,2$ & $-65,0$ & $-65,2$ & $-68,2$ & 4/4 \quad / \quad 3/4 \\
+45 mm & $-46,1$ & $-62,8$ & $-64,4$ & $-71,6$ & 5/8 \quad / \quad 5/8 \\
+41 mm & $-44,5$ & $-63,0$ & $-65,5$ & $-73,5$ & 2/4 \quad / \quad 4/4 \\
+\bottomrule
+\end{tabularx}
+{\footnotesize\color{muted}Valeurs en dBm. La moyenne est calculée uniquement lors des détections ; le taux de détection complète donc indispensablement la lecture.}
+
+\vspace{5mm}
+\begin{tcolorbox}[colback=paper,colframe=line,boxrule=.5pt,arc=2mm]
+\textbf{Gain face à l'antenne d'origine.} Pour la 50 mm, le top 5 progresse de \textbf{34,2 dB}, \textit{Devices} canal 11 de \textbf{34,1 dB} et la passerelle de \textbf{25,6 dB}. Le nombre moyen de réseaux passe de 7,0 à 33,6 (\textbf{$\times$4,8}). L'amélioration est beaucoup plus grande que la dispersion entre scans et ne peut raisonnablement être attribuée au seul bruit de mesure.
+\end{tcolorbox}
+
+\begin{warningbox}
+\textbf{Point de vigilance temporel.} Sur la série 50 mm, le nombre de réseaux diminue d'environ 0,9 par scan, alors que le top 5 s'améliore légèrement (+0,23 dB par scan). Cela suggère surtout une variation des réseaux faibles présents, et renforce l'usage des repères et du top 5 pour classer les antennes.
+\end{warningbox}
+\newpage
+
+% --- Page 5 ---------------------------------------------------------------
+\sectiontitle{4. Tendances de géométrie et d'intégration}{La longueur n'explique pas tout ; l'orientation et le boîtier dominent la performance finale}
+
+\begin{minipage}[t]{0.49\textwidth}
+\textbf{Longueur, antenne verticale}
+\begin{tikzpicture}
+\begin{axis}[
+  width=.95\linewidth,height=58mm,
+  xmin=40,xmax=51,xtick={41,45,48,50},
+  xlabel={longueur totale (mm)},ylabel={top 5 RSSI (dBm)},
+  ymin=-58,ymax=-40,
+  grid=major,grid style={draw=line!70},axis line style={draw=line},
+  tick label style={font=\scriptsize},label style={font=\scriptsize}]
+\addplot[color=blue,very thick,mark=*,mark options={fill=blue}] coordinates {(41,-44.30) (45,-45.92) (48,-54.10) (50,-44.24)};
+\end{axis}
+\end{tikzpicture}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\textbf{Intégration de la 41 mm}
+\begin{tikzpicture}
+\begin{axis}[
+  width=.95\linewidth,height=58mm,
+  ybar,bar width=11mm,ymin=-66,ymax=-40,
+  symbolic x coords={Verticale,Couchée,Boîte},xtick=data,
+  xticklabels={Verticale,Couchée,Couchée + boîte},
+  ylabel={top 5 RSSI (dBm)},
+  nodes near coords,every node near coord/.append style={font=\scriptsize},
+  grid=major,grid style={draw=line!70},axis line style={draw=line},
+  tick label style={font=\scriptsize},label style={font=\scriptsize}]
+\addplot[fill=orange,draw=none] coordinates {(Verticale,-44.30) (Couchée,-54.45) (Boîte,-61.50)};
+\end{axis}
+\end{tikzpicture}
+\end{minipage}
+
+\begin{tcolorbox}[colback=blue!5,colframe=blue!35,boxrule=.5pt,arc=2mm]
+\textbf{Pas de tendance monotone avec la longueur.} Les résultats 41, 45 et 50 mm sont proches sur le signal dominant, alors que la 48 mm présente un creux marqué. Cela indique une interaction entre longueur électrique, boucle, plan de masse, routage et environnement proche. Une simple interpolation géométrique serait donc risquée.
+\end{tcolorbox}
+
+\vspace{2mm}
+\textbf{Décomposition de la pénalité d'intégration sur la 41 mm}\par\smallskip
+\begin{tabularx}{\textwidth}{>{\bfseries}l C{25mm} C{25mm} C{25mm} Y}
+\toprule
+Transition & Réseaux/scan & Top 5 & Gateway & Interprétation \\
+\midrule
+Verticale $\rightarrow$ couchée & $-4,8$ & $-10,2$ dB & $-2,2$ dB & Forte perte directionnelle / couplage avec le support \\
+Couchée $\rightarrow$ boîte fermée & $-5,0$ & $-7,1$ dB & $-13,3$ dB & Désaccord et absorption liés à l'intégration \\
+Verticale $\rightarrow$ produit fermé & $-9,8$ & $-17,2$ dB & $-15,5$ dB & La mécanique annule une part majeure du gain antenne \\
+\bottomrule
+\end{tabularx}
+
+\vspace{5mm}
+\begin{warningbox}
+\textbf{Implication produit.} Optimiser l'antenne à l'air libre ne suffit pas. La position, la distance à la batterie et au PCB, le plastique, les fils ainsi que le poignet peuvent déplacer la résonance et modifier le diagramme de rayonnement. Une marge de 2 ou 3 dB entre candidates devient secondaire face à une pénalité d'intégration mesurée de 17 dB.
+\end{warningbox}
+
+\vspace{3mm}
+\textbf{Lecture de la stabilité}
+\begin{itemize}
+  \item Les séries 45 mm, 41 mm verticale et 50 mm ont un écart-type du top 5 inférieur à 1 dB : leur réception dominante est répétable.
+  \item La 48 mm (2,1 dB) et surtout la 41 mm couchée (3,8 dB) varient davantage ; ces configurations sont plus sensibles à l'environnement ou à l'orientation.
+  \item La boîte fermée est stable (0,4 dB) mais stable à un niveau nettement dégradé : la répétabilité ne compense pas la perte absolue.
+\end{itemize}
+\newpage
+
+% --- Page 6 ---------------------------------------------------------------
+\sectiontitle{5. Décision et plan de validation}{Choisir la 50 mm pour le prochain prototype, avec une porte de sortie 45 mm}
+
+\textbf{Classement argumenté des géométries verticales}\par\smallskip
+\begin{tabularx}{\textwidth}{C{11mm} >{\bfseries}p{28mm} C{22mm} C{22mm} Y}
+\toprule
+Rang & Candidate & Signal dominant & Couverture & Justification \\
+\midrule
+\rowcolor{green!8}\textbf{1} & 50 mm & Excellent & Excellente & Meilleure combinaison top 5, passerelle, réseaux distants et répétabilité ; série la plus fournie (9 scans). \\
+\textbf{2} & 45 mm & Très bon & Excellente & Seulement 1,7 dB derrière sur le top 5 ; compacte et très stable. Meilleur compromis mécanique. \\
+\textbf{3} & 41 mm & Excellent proche & Bonne & Niveau proche au meilleur, mais 3,8 réseaux de moins et réception distante plus faible ; intégration mesurée défavorable. \\
+\textbf{4} & 48 mm & Moyen / atypique & Excellente & Nombre de réseaux élevé, mais perte de 9,9 dB sur le top 5 face à la 50 mm et seulement 4 scans. À recontrôler. \\
+\bottomrule
+\end{tabularx}
+
+\vspace{4mm}
+\begin{decisionbox}
+\textbf{Recommandation.} Réaliser le prochain prototype avec la \textbf{50 mm verticale}. Si cette géométrie est incompatible avec le volume disponible, retenir la \textbf{45 mm} : la réduction d'encombrement coûte peu sur le lien dominant, avec une perte mesurée plus visible sur les liens distants. Ne pas figer la production avant un essai comparatif 50/45 dans le produit réellement fermé et porté.
+\end{decisionbox}
+
+\vspace{4mm}
+\textbf{Validation minimale avant gel de conception}
+\begin{enumerate}[leftmargin=7mm,itemsep=3pt,topsep=2pt]
+  \item \textbf{A/B 50 mm vs 45 mm :} au moins 20 scans alternés par configuration, même emplacement, ordre randomisé pour neutraliser la dérive temporelle.
+  \item \textbf{Configurations réelles :} boîtier fermé, batterie présente, bracelet au poignet ; tester au minimum quatre orientations du corps et deux poignets/utilisateurs.
+  \item \textbf{Mesure applicative :} enregistrer RSSI du point d'accès cible, taux de paquets UDP perdus, temps de reconnexion et latence d'acquittement, pas seulement le nombre de SSID.
+  \item \textbf{Cas limites :} station dans une autre pièce, porte fermée, mouvement du bras, moteur vibrant et batterie faible.
+  \item \textbf{Critère proposé :} zéro perte de session critique ; RSSI cible idéalement supérieur à \(-70\) dBm, marge jusqu'à \(-80\) dBm ; taux de livraison UDP supérieur à 99\% pendant la fenêtre d'alarme.
+\end{enumerate}
+
+\begin{warningbox}
+\textbf{Mesure RF recommandée si disponible.} Un VNA permettrait de vérifier le coefficient de réflexion autour de 2,4 GHz dans chaque état mécanique. À défaut, conserver le test applicatif fermé et porté comme arbitre final : c'est lui qui reflète le fonctionnement réel du bracelet.
+\end{warningbox}
+
+\vspace{3mm}
+\textbf{Conclusion}
+
+L'antenne modifiée apporte une amélioration majeure face à l'origine. Parmi les variantes mesurées, la \textbf{50 mm} est la candidate la mieux étayée pour maximiser la marge radio ; la \textbf{45 mm} est une alternative compacte crédible. Le principal risque n'est plus la différence de quelques millimètres, mais l'intégration mécanique : la mesure de la 41 mm montre qu'une mauvaise orientation et le boîtier peuvent coûter plus de 17 dB. La prochaine décision doit donc être prise sur un A/B 50/45, produit fermé et porté, avec des paquets applicatifs réels.
+
+\vfill
+\begin{tcolorbox}[colback=paper,colframe=line,boxrule=.5pt,arc=2mm]
+{\footnotesize\color{muted}\textbf{Traçabilité.} Calculs effectués à partir des 39 blocs de scans du fichier brut \texttt{app mobile/mesures.txt}. Moyennes et écarts-types sont calculés entre scans ; les valeurs de points d'accès utilisent le meilleur RSSI du couple SSID/canal dans chaque scan. Aucun lissage ni exclusion de scan n'a été appliqué.}
+\end{tcolorbox}
+
+\end{document}

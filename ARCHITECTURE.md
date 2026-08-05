@@ -92,6 +92,7 @@ Single station-published row for the latest bracelet state as seen by the statio
 - `problem_code`: one of the problem codes below, or `none`.
 - `problem_message`: short human-readable diagnostic text.
 - `bracelet_battery_voltage`: bracelet battery terminal voltage in volts, or `null` if unknown.
+- `bracelet_wifi_rssi_dbm`: RSSI in dBm of the WiFi network currently connected to the bracelet, or `null` when the bracelet has not been seen recently or the value is unknown.
 - `bracelet_last_seen_ms`: station uptime timestamp for the last bracelet packet, or `null`.
 - `bracelet_energy`: latest 200 ms energy window reported by the bracelet.
 - `bracelet_energy_valid_ms`: measured time inside that 200 ms window, excluding vibration and settling time.
@@ -208,7 +209,7 @@ Station battery voltage is measured on station GPIO34 through a 2:1 voltage divi
 Use compact binary packets. All packets start with:
 
 - `magic`: uint32 value identifying Starter traffic before any packet is parsed.
-- `protocol_version`: `3`. Older packets are rejected; station and bracelet firmware must be updated together.
+- `protocol_version`: `4`. Older packets are rejected; station and bracelet firmware must be updated together.
 - `message_type`: enum below.
 - `sender_role`: `station` or `bracelet`.
 - `device_id`: 6-byte MAC address.
@@ -230,6 +231,7 @@ Fields:
 - `activity_score`: uint8 compatibility view of latest energy, `0..100`.
 - `validated`: boolean, always false in the simple energy v1 flow.
 - `battery_voltage_mv`: uint16 bracelet battery terminal voltage in millivolts, or `0` if unknown.
+- `wifi_rssi_dbm`: signed int8 RSSI of the bracelet's currently connected WiFi network, or `0` if unknown.
 - `fault_code`: problem code enum, or `none`.
 - `flags`: bitmask for `charging`, `sensor_ready`, `vibration_active`.
 - `energy`: uint32 energy measured over the latest 200 ms window.

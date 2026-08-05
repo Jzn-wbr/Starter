@@ -127,6 +127,7 @@ struct BraceletSnapshot
   uint16_t energyValidMs = 0;
   float batteryVoltage = -1.0F;
   int batteryPercent = -1;
+  int wifiRssiDbm = BraceletStationProtocol::WIFI_RSSI_UNKNOWN_DBM;
   uint32_t lastSeenMs = 0;
   uint32_t sequence = 0;
   uint32_t bootSessionId = 0;
@@ -829,10 +830,19 @@ static void publishBraceletStatus()
     lastSeen = String(bracelet.lastSeenMs);
   }
 
+  String wifiRssiDbm = "null";
+  const bool braceletRecentlySeen = bracelet.lastSeenMs > 0 &&
+                                     millis() - bracelet.lastSeenMs <= ARMED_BRACELET_TIMEOUT_MS;
+  if (braceletRecentlySeen && bracelet.wifiRssiDbm != BraceletStationProtocol::WIFI_RSSI_UNKNOWN_DBM)
+  {
+    wifiRssiDbm = String(bracelet.wifiRssiDbm);
+  }
+
   const String body = String("{\"id\":\"main\",\"bracelet_state\":\"") + braceletStateName(bracelet.state) +
                       "\",\"problem_code\":\"" + problemName(bracelet.problem) +
                       "\",\"problem_message\":\"" + escapeJson(problemName(bracelet.problem)) +
                       "\",\"bracelet_battery_voltage\":" + batteryVoltage +
+                      ",\"bracelet_wifi_rssi_dbm\":" + wifiRssiDbm +
                       ",\"bracelet_last_seen_ms\":" + lastSeen +
                       ",\"bracelet_energy\":" + String(bracelet.energy) +
                       ",\"bracelet_energy_valid_ms\":" + String(bracelet.energyValidMs) +
@@ -1251,6 +1261,7 @@ static void handleBraceletStatus(const BraceletStatusPacket &packet, const IPAdd
   bracelet.validated = packet.validated != 0;
   bracelet.batteryVoltage = packet.batteryVoltageMv == 0 ? -1.0F : static_cast<float>(packet.batteryVoltageMv) / 1000.0F;
   bracelet.batteryPercent = estimateBatteryPercent(bracelet.batteryVoltage);
+  bracelet.wifiRssiDbm = packet.wifiRssiDbm;
   bracelet.problem = packetProblemToCode(packet.faultCode);
   bracelet.charging = packet.flags & 0x01;
   bracelet.sensorReady = packet.flags & 0x02;
@@ -1269,10 +1280,11 @@ static void handleBraceletStatus(const BraceletStatusPacket &packet, const IPAdd
   if (now - lastBraceletUdpDebugMs >= 5000)
   {
     lastBraceletUdpDebugMs = now;
-    Serial.printf("udp_rx_bracelet:seq=%lu,battery_mv=%u,battery_v=%.3f,size=%u,src=%s\n",
+    Serial.printf("udp_rx_bracelet:seq=%lu,battery_mv=%u,battery_v=%.3f,wifi_rssi=%d,size=%u,src=%s\n",
                   static_cast<unsigned long>(packet.header.sequence),
                   static_cast<unsigned int>(packet.batteryVoltageMv),
                   bracelet.batteryVoltage,
+                  bracelet.wifiRssiDbm,
                   static_cast<unsigned int>(sizeof(packet)),
                   remoteIp.toString().c_str());
   }

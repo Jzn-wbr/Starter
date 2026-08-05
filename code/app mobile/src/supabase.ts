@@ -61,6 +61,7 @@ export interface BraceletStatus {
   problem_code: ProblemCode
   problem_message: string
   bracelet_battery_voltage: number | null
+  bracelet_wifi_rssi_dbm: number | null
   bracelet_last_seen_ms: number | null
   bracelet_energy: number
   bracelet_energy_valid_ms: number
