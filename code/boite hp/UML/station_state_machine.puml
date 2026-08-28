@@ -14,7 +14,7 @@ armed --> ringing : local alarm time reached\nbracelet ready
 armed --> idle : 10-minute activity window expired\nor revision already completed
 armed --> fault : no valid time/config\nbracelet missing/low/fault
 
-ringing --> validating_activity : valid v4 UDP movement event <= 10 s old\nXSMT LOW for remaining 10 s interval
+ringing --> validating_activity : valid v5 ESP-NOW movement event <= 10 s old\nXSMT LOW for remaining 10 s interval
 ringing --> stopped : 10-minute activity window ended
 ringing --> ringing : bracelet timeout > 3 s\npublish bracelet_missing, keep audio playing
 ringing --> fault : audio fault
@@ -33,6 +33,9 @@ fault --> armed : problem fixed\nvalid enabled alarm
 note right of ringing
 Supabase track playback failure does not stop alarm.
 The station switches to generated local fallback audio.
+Audio starts at the configured alarm time, while
+bracelet vibration remains disabled for 15 seconds.
+After that delay, vibration requests use the existing flow.
 Periodic config refresh does not leave ringing
 or validating_activity.
 Network status refreshes are deferred while
@@ -48,6 +51,8 @@ note bottom
 There is no normal stop or snooze transition.
 Bracelet energy only mutes audio during the
 fixed 10-minute activity window by toggling XSMT.
+Movement processing and mute timing stay active during
+the initial 15-second vibration-free interval.
 The bracelet retransmits its newest qualifying event
 for up to 10 seconds. The station subtracts event age
 from the original 10-second mute and ignores duplicates.

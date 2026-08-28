@@ -8,12 +8,12 @@ This folder contains the bedside speaker station firmware. The station is the ce
 - It synchronizes time.
 - It fetches alarm configuration from Supabase.
 - It plays the selected wake-up music.
-- It receives bracelet movement telemetry over WiFi UDP.
+- It receives bracelet movement telemetry over ESP-NOW.
 - It decides when alarm audio should play and when the alarm window is complete.
 
 The PWA is not the alarm authority. The bracelet does not decide final alarm state.
 
-Read `../../ARCHITECTURE.md` before changing station state transitions, Supabase schema usage, fallback behavior, WiFi UDP packets, battery readiness, or station/bracelet communication.
+Read `../../ARCHITECTURE.md` before changing station state transitions, Supabase schema usage, fallback behavior, ESP-NOW packets, battery readiness, or station/bracelet communication.
 
 Read and maintain the PlantUML diagrams in `UML/` when changing station firmware architecture. These diagrams are for human understanding and must evolve with the code.
 
@@ -30,7 +30,8 @@ The current firmware already:
 - Loads the selected track from `alarm_audio_selection` and `music_tracks`.
 - Outputs audio over I2S pins for the PCM5102A/PAM8403 audio chain.
 - Runs the fixed alarm activity window and generated local fallback sound.
-- Receives WiFi UDP protocol v4 movement events and connected-network RSSI, acknowledges them, recovers
+- Keeps bracelet vibration off for the first 15 seconds after the configured alarm time while leaving audio and movement handling active.
+- Receives ESP-NOW protocol v5 movement events, acknowledges them, recovers
   their unelapsed mute time after packet loss, and confirms bracelet vibration
   before the pre-unmute warning starts.
 
@@ -46,7 +47,7 @@ The station should:
 - Fetch the next alarm configuration from Supabase.
 - Stream the selected Supabase music file at alarm time.
 - Use a small local fallback alarm sound if Supabase music is unreachable at wake-up time.
-- Connect to the dedicated, NVS-paired bracelet over WiFi UDP.
+- Connect to the dedicated, NVS-paired bracelet over ESP-NOW while retaining home WiFi for backend and audio traffic.
 - Track bracelet movement during the fixed 10-minute activity window after the configured alarm time.
 - Play alarm audio during that window only while bracelet movement is absent, then stop once the window ends.
 - Report WiFi, Supabase, audio, bracelet, and battery/fault states through logs and app-visible status when available.
@@ -73,7 +74,7 @@ Update the relevant `.puml` files when changing:
 - station class/module boundaries;
 - alarm state machine behavior;
 - Supabase config/status flow;
-- WiFi UDP bracelet communication, discovery, and pairing;
+- ESP-NOW bracelet communication, channel discovery, and pairing;
 - audio player and fallback sound architecture;
 - fault-handling paths.
 

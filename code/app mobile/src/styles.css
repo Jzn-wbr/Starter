@@ -293,7 +293,6 @@ input:focus-visible,
 .volume-card,
 .fixed-alarm-card,
 .featured-track,
-.fallback-track,
 .track-row,
 .readiness,
 .device-list,
@@ -372,16 +371,6 @@ input:focus-visible,
 .cover-1 { background: linear-gradient(145deg, #263668, #88534f); }
 .cover-2 { background: linear-gradient(145deg, #3d286e, #3f6781); }
 .cover-3 { background: linear-gradient(145deg, #1e4f62, #684c83); }
-
-.cover-art.fallback {
-  color: var(--positive);
-  background: rgba(88, 212, 191, 0.12);
-}
-
-.cover-art.fallback::before,
-.cover-art.fallback::after {
-  display: none;
-}
 
 .sound-copy {
   display: grid;
@@ -655,33 +644,17 @@ input:focus-visible,
   font-size: 0.75rem;
 }
 
-.fallback-track {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
-  gap: 11px;
-  align-items: center;
-  width: 100%;
-  min-height: 58px;
-  padding: 11px 13px;
-  border-radius: 17px;
-  color: var(--text);
-  text-align: left;
-}
-
-.fallback-track.selected,
 .track-row.selected {
   border-color: rgba(124, 131, 255, 0.28);
   background: rgba(124, 131, 255, 0.08);
 }
 
-.fallback-track > span,
 .track-copy {
   display: grid;
   gap: 3px;
   min-width: 0;
 }
 
-.fallback-track small,
 .track-copy small {
   color: var(--muted);
   font-size: 0.72rem;

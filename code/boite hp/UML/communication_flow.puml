@@ -5,7 +5,7 @@ participant "Station firmware" as Station
 participant "Configured Wi-Fi networks" as Wifi
 database "Supabase REST" as Supabase
 participant "NTP" as Ntp
-participant "WiFi UDP bracelet" as Bracelet
+participant "ESP-NOW bracelet" as Bracelet
 participant "Audio output\nPCM5102A/PAM8403" as Audio
 
 Station -> Wifi : try primary Wi-Fi network
@@ -34,10 +34,13 @@ note right
   alarm_plan revision has been loaded.
 end note
 
-Station -> Bracelet : protocol v4 station_control announcement\nUDP subnet broadcast on port 42100
-Bracelet -> Station : protocol v4 bracelet_status unicast\nincluding connected Wi-Fi RSSI
+Station -> Station : initialize ESP-NOW on the router's radio channel
+Bracelet -> Bracelet : scan channels 1 through 13 every 300 ms
+Station -> Bracelet : protocol v5 station_control broadcast over ESP-NOW
+Bracelet -> Station : protocol v5 bracelet_status broadcast over ESP-NOW
 Station -> Station : persist first valid bracelet MAC in NVS
 Bracelet -> Bracelet : persist first valid station MAC in NVS
+Bracelet -> Bracelet : lock onto the station channel for 15 seconds
 
 loop while idle/armed
   Station -> Bracelet : control or announcement every 5 seconds
@@ -52,7 +55,7 @@ end
 loop every 10 seconds while connected
   Station -> Supabase : refresh alarm_plan and alarm_audio_selection
   Station -> Supabase : publish station_status with minimal response\nwith station_battery_voltage from GPIO34
-  Station -> Supabase : publish bracelet_status with minimal response\nincluding current Wi-Fi RSSI when recently seen
+  Station -> Supabase : publish bracelet_status with minimal response
 end
 note right
   During active remote audio streaming, periodic
@@ -64,8 +67,10 @@ end note
 
 alt alarm time within 10-minute activity window
   Station -> Audio : start selected stream or local fallback
-  Station -> Audio : prime remote stream briefly\nbefore requesting bracelet vibration
-  alt valid retained event reaches threshold 1,333,333
+  Station -> Audio : prime remote stream briefly
+  Station -> Bracelet : keep vibration_request=false\nfor the first 15 s after configured alarm time
+  Station -> Bracelet : resume normal vibration requests\nafter the initial 15 s
+  alt valid retained event reaches threshold 1,000,000
     Station -> Station : calculate event age from bracelet uptime
     Station -> Audio : mute XSMT for 10 s minus event age\nkeep stream/fallback running
     Station -> Supabase : station_state=validating_activity
@@ -75,7 +80,11 @@ alt alarm time within 10-minute activity window
   alt mute timer active
     Station -> Audio : stay muted
   else mute timer expires
-    Station -> Bracelet : request vibration with a new id\nwhile XSMT remains muted
+    alt still within the first 15 s after alarm time
+      Station -> Station : keep the normal pre-unmute timing\nwithout bracelet vibration
+    else initial 15 s elapsed
+      Station -> Bracelet : request vibration with a new id\nwhile XSMT remains muted
+    end
     alt matching vibration acknowledgement arrives
       Station -> Station : start 3 s warning plus 500 ms guard
     else no acknowledgement for 3 s
@@ -96,16 +105,15 @@ alt alarm time within 10-minute activity window
   end
 end
 
-alt home WiFi unavailable
-  Station -> Station : stop UDP and clear learned bracelet IP
+alt home WiFi channel changes or station controls are missing
+  Bracelet -> Bracelet : resume channel scanning after 15 seconds
   Bracelet -> Bracelet : keep sensor and retained event processing active
   note right
     Before alarm, bracelet absence becomes blocking after 25 seconds.
     During alarm, the existing conservative 3-second policy applies.
   end note
-else WiFi restored
-  Station -> Bracelet : broadcast announcement for rediscovery
-  Bracelet -> Station : resume unicast without losing the NVS pairing
+else station channel rediscovered
+  Bracelet -> Station : resume ESP-NOW without losing the NVS pairing
 end
 
 Station -> Station : 10-minute activity window ends

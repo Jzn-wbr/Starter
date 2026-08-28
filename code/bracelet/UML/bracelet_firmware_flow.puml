@@ -4,29 +4,25 @@ title Bracelet Firmware Flow
 start
 :Configure vibration motor, battery ADC and BMI270;
 :Load the paired station MAC from NVS;
-:Start WiFi STA mode with radio sleep disabled;
-:Try the primary then fallback home network with radio awake;
-:Bind UDP port 42100 after association;
-:Restore radio sleep outside an active alarm;
+:Start WiFi STA mode without joining the router;
+:Disable radio sleep and initialize ESP-NOW;
+:Register an ESP-NOW broadcast peer;
 
 repeat
-  :Maintain non-blocking WiFi reconnection;
   :Sample battery once per second;
 
-  if (UDP station_control received?) then (yes)
+  if (valid ESP-NOW station_control received?) then (yes)
     if (station not paired?) then (yes)
       :Persist the first valid station MAC in NVS;
     else (no)
       :Reject controls from any other MAC;
     endif
-    :Learn or update station IP from UDP source;
     :Store station state, acknowledgements and vibration request;
-    if (alarm active?) then (yes)
-      :Disable WiFi radio sleep;
-      :Use 200 ms status cadence;
-    else (no)
-      :Enable WiFi radio sleep;
-      :Use 10 second status cadence;
+    :Lock onto the current radio channel for 15 seconds;
+  else (no)
+    if (no valid control for 15 seconds?) then (yes)
+      :Scan WiFi channels 1 through 13 every 300 ms;
+      :Send a status packet on each channel;
     endif
   endif
 
@@ -38,9 +34,9 @@ repeat
   endif
 
   if (completed window reaches threshold?) then (yes)
-    :Create a protocol v4 movement event;
+    :Create a protocol v5 movement event;
     :Retain for at most 10 seconds until acknowledged;
-    :Send bracelet_status immediately by UDP unicast;
+    :Send bracelet_status immediately over ESP-NOW;
   endif
 
   if (vibration requested?) then (yes)
@@ -49,7 +45,11 @@ repeat
     :Send acknowledgement immediately;
   endif
 
-  :Send adaptive protocol v4 status with telemetry and connected Wi-Fi RSSI;
+  if (alarm active?) then (yes)
+    :Send protocol v5 status every 200 ms;
+  else (no)
+    :Send protocol v5 status every 10 seconds;
+  endif
 repeat while (device powered)
 
 @enduml

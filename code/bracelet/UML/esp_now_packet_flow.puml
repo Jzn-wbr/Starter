@@ -1,32 +1,34 @@
 @startuml
-title Bracelet / Station WiFi UDP Packet Flow
+title Bracelet / Station ESP-NOW Packet Flow
 
 participant "Bracelet ESP32-C3" as Bracelet
-participant "Home WiFi router" as Router
 participant "Station ESP32" as Station
+participant "Home WiFi router" as Router
 
-Bracelet -> Router : associate using local secrets
-Station -> Router : associate using local secrets
-Station -> Bracelet : subnet broadcast station_control protocol v4 on UDP 42100
+Station -> Router : associate for NTP, Supabase and remote audio
+Station -> Station : initialize ESP-NOW on the router channel
+Bracelet -> Bracelet : scan channels 1 through 13
+Station -> Bracelet : broadcast station_control protocol v5
 
 alt first valid exchange
   Bracelet -> Bracelet : persist station MAC in NVS
-  Bracelet -> Station : immediate unicast bracelet_status
+  Bracelet -> Station : immediate broadcast bracelet_status
   Station -> Station : persist bracelet MAC in NVS
 else already paired
   Bracelet -> Bracelet : reject foreign station MACs
   Station -> Station : reject foreign bracelet MACs
 end
 
+Bracelet -> Bracelet : lock onto the station channel for 15 seconds
+
 loop idle / armed
-  Station -> Bracelet : control or announcement every 5 seconds
-  Bracelet -> Station : status every 10 seconds\nwith connected Wi-Fi RSSI
+  Station -> Bracelet : control every 5 seconds
+  Bracelet -> Station : status every 10 seconds
 end
 
 loop ringing / validating_activity
-  Station -> Bracelet : unicast control every 700 ms
-  Station -> Bracelet : periodic broadcast for rediscovery
-  Bracelet -> Station : status every 200 ms\nwith connected Wi-Fi RSSI
+  Station -> Bracelet : control every 700 ms
+  Bracelet -> Station : status every 200 ms
   Bracelet -> Station : qualifying movement immediately
 end
 
@@ -36,8 +38,14 @@ Station -> Bracelet : vibration request with new id
 Bracelet -> Bracelet : start vibration pulse
 Bracelet -> Station : immediate status with vibration_ack_id
 
+alt no valid control for 15 seconds
+  Bracelet -> Bracelet : resume channel scanning every 300 ms
+else station found
+  Bracelet -> Bracelet : keep the discovered channel locked
+end
+
 note right of Station
-  UDP loss is handled by retained events,
+  Packet loss is handled by retained events,
   identifiers, retransmission and acknowledgements.
   The station remains the alarm authority.
 end note

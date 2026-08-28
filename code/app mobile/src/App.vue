@@ -718,13 +718,6 @@ function formatBatteryVoltage(value?: number | null) {
   return value === null || value === undefined ? 'Inconnue' : `${value.toFixed(2)} V`
 }
 
-function formatWifiRssi(value?: number | null) {
-  if (value === null || value === undefined || value >= 0) return 'Indisponible — bracelet hors connexion'
-  const rounded = Math.round(value)
-  const quality = rounded >= -50 ? 'Excellent' : rounded >= -60 ? 'Très bon' : rounded >= -70 ? 'Bon' : rounded >= -80 ? 'Faible' : 'Très faible'
-  return `${rounded} dBm · ${quality}`
-}
-
 function estimateBatteryPercent(voltage?: number | null) {
   if (voltage === null || voltage === undefined || voltage <= 0.1) return null
   const ratio = (voltage - BATTERY_EMPTY_V) / (BATTERY_FULL_V - BATTERY_EMPTY_V)
@@ -912,7 +905,7 @@ function formatUpdatedAt(value?: string) {
       </section>
 
       <section v-else-if="activeTab === 'music'" class="page music-page">
-        <section class="featured-track">
+        <section v-if="selectedTrack" class="featured-track">
           <div class="cover-art featured" :class="coverClass(selectedTrack?.id)"><Music :size="34" /></div>
           <div class="featured-copy">
             <small>Son sélectionné</small>
@@ -935,19 +928,6 @@ function formatUpdatedAt(value?: string) {
           <h2>Bibliothèque</h2>
           <span>{{ musicTracks.length }} son{{ musicTracks.length > 1 ? 's' : '' }}</span>
         </div>
-
-        <button
-          class="fallback-track"
-          type="button"
-          :class="{ selected: audioSelection?.audio_source === 'fallback' }"
-          :disabled="alarmIsLocked || !canUseSupabase"
-          @click="chooseFallback"
-        >
-          <div class="cover-art small fallback"><ShieldCheck :size="17" /></div>
-          <span><strong>Son de secours local</strong><small>Toujours disponible hors ligne</small></span>
-          <Check v-if="audioSelection?.audio_source === 'fallback'" :size="19" />
-          <ChevronRight v-else :size="18" />
-        </button>
 
         <div class="track-list">
           <article v-for="track in musicTracks" :key="track.id" class="track-row" :class="{ selected: selectedTrack?.id === track.id }">
@@ -1049,7 +1029,6 @@ function formatUpdatedAt(value?: string) {
               <strong>{{ braceletStatus ? problemLabels[braceletStatus.problem_code] : 'Aucune donnée' }}</strong>
               <small>{{ braceletStatus?.problem_message || 'Pas de message de diagnostic' }}</small>
               <small>Batterie : {{ formatBatteryVoltage(braceletStatus?.bracelet_battery_voltage) }}</small>
-              <small>Wi-Fi connecté : {{ formatWifiRssi(braceletStatus?.bracelet_wifi_rssi_dbm) }}</small>
             </div>
           </div>
         </section>

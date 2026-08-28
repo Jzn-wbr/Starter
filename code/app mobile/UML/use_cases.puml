@@ -10,7 +10,6 @@ rectangle "Wake-up PWA" {
   usecase "Clean MP3 metadata" as CleanMp3Metadata
   usecase "Browse music library" as BrowseMusic
   usecase "Select wake-up track" as SelectTrack
-  usecase "Select local fallback sound" as SelectFallback
   usecase "Configure and activate alarm" as ConfigureAlarm
   usecase "View saved alarm time" as ViewSavedAlarm
   usecase "Remove saved alarm before lock window" as RemoveAlarm
@@ -19,7 +18,6 @@ rectangle "Wake-up PWA" {
   usecase "View bracelet status summary" as ViewBraceletStatus
   usecase "Open station details" as ViewStationDetails
   usecase "Open bracelet details" as ViewBraceletDetails
-  usecase "View bracelet Wi-Fi RSSI" as ViewBraceletRssi
   usecase "Receive automatic updates" as ReceiveUpdates
 }
 
@@ -36,19 +34,16 @@ rectangle "Supabase" {
 User --> UploadMusic
 User --> BrowseMusic
 User --> SelectTrack
-User --> SelectFallback
 User --> ConfigureAlarm
 User --> ViewSavedAlarm
 User --> RemoveAlarm
 LockAlarm --> ConfigureAlarm
 LockAlarm --> SelectTrack
-LockAlarm --> SelectFallback
 LockAlarm --> RemoveAlarm
 User --> ViewStationStatus
 User --> ViewBraceletStatus
 User --> ViewStationDetails
 User --> ViewBraceletDetails
-ViewBraceletDetails --> ViewBraceletRssi
 ReceiveUpdates --> ViewStationStatus
 ReceiveUpdates --> ViewBraceletStatus
 
@@ -58,7 +53,6 @@ UploadMusic --> CleanMp3Metadata
 CleanMp3Metadata --> StoreAudio
 BrowseMusic --> StoreMusicMetadata
 SelectTrack --> StoreAlarmAudio
-SelectFallback --> StoreAlarmAudio
 ConfigureAlarm --> StoreAlarmPlan
 ConfigureAlarm --> StoreAlarmAudio
 ViewSavedAlarm --> StoreAlarmPlan
@@ -67,7 +61,6 @@ ViewStationStatus --> ExposeStationStatus
 ViewBraceletStatus --> ExposeBraceletStatus
 ViewStationDetails --> ExposeStationStatus
 ViewBraceletDetails --> ExposeBraceletStatus
-ViewBraceletRssi --> ExposeBraceletStatus
 ExposeStationStatus --> PublishRealtime
 ExposeBraceletStatus --> PublishRealtime
 StoreAlarmPlan --> PublishRealtime
