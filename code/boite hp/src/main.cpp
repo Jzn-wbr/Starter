@@ -18,16 +18,6 @@
 #include "secrets.example.h"
 #endif
 
-// Existing local secrets.h files predate the fallback network fields. Keep
-// them compatible until the optional values are added there.
-#ifndef WIFI_FALLBACK_SSID
-#define WIFI_FALLBACK_SSID ""
-#endif
-
-#ifndef WIFI_FALLBACK_PASSWORD
-#define WIFI_FALLBACK_PASSWORD ""
-#endif
-
 static const int PIN_LRCK = 32;
 static const int PIN_DIN = 33;
 static const int PIN_BCK = 25;
@@ -76,29 +66,22 @@ enum class StationState : uint8_t
 enum class ProblemCode : uint8_t
 {
   None = 0,
-  WifiUnavailable = 1,
-  SupabaseUnavailable = 2,
-  TimeUnknown = 3,
-  NoValidAlarmConfig = 4,
-  MusicStreamFailed = 5,
-  FallbackAudioFailed = 6,
-  BraceletMissing = 7,
-  BraceletLowBattery = 8,
-  BraceletFault = 9,
-  SensorFault = 10,
-  AudioFault = 11,
-  UnknownFault = 12,
+  SupabaseUnavailable = 1,
+  TimeUnknown = 2,
+  NoValidAlarmConfig = 3,
+  MusicStreamFailed = 4,
+  FallbackAudioFailed = 5,
+  BraceletMissing = 6,
+  BraceletLowBattery = 7,
+  SensorFault = 8,
 };
 
 enum class BraceletState : uint8_t
 {
   Unknown = 0,
-  Charging = 1,
-  Ready = 2,
-  Active = 3,
-  Validated = 4,
-  LowBattery = 5,
-  Fault = 6,
+  Ready = 1,
+  LowBattery = 2,
+  Fault = 3,
 };
 
 struct AlarmConfig
@@ -117,20 +100,14 @@ struct BraceletSnapshot
 {
   BraceletState state = BraceletState::Unknown;
   ProblemCode problem = ProblemCode::None;
-  uint8_t activityScore = 0;
-  bool validated = false;
-  bool sensorReady = false;
   bool vibrating = false;
-  bool charging = false;
   uint32_t energy = 0;
   uint16_t energyValidMs = 0;
   float batteryVoltage = -1.0F;
   int batteryPercent = -1;
-  int wifiRssiDbm = BraceletStationProtocol::WIFI_RSSI_UNKNOWN_DBM;
   uint32_t lastSeenMs = 0;
   uint32_t sequence = 0;
   uint32_t bootSessionId = 0;
-  uint32_t movementEventId = 0;
   uint32_t vibrationAckId = 0;
 };
 
@@ -202,10 +179,7 @@ static const char *braceletStateName(BraceletState state)
   switch (state)
   {
   case BraceletState::Unknown: return "unknown";
-  case BraceletState::Charging: return "charging";
   case BraceletState::Ready: return "ready";
-  case BraceletState::Active: return "active";
-  case BraceletState::Validated: return "validated";
   case BraceletState::LowBattery: return "low_battery";
   case BraceletState::Fault: return "fault";
   }
@@ -217,7 +191,6 @@ static const char *problemName(ProblemCode code)
   switch (code)
   {
   case ProblemCode::None: return "none";
-  case ProblemCode::WifiUnavailable: return "wifi_unavailable";
   case ProblemCode::SupabaseUnavailable: return "supabase_unavailable";
   case ProblemCode::TimeUnknown: return "time_unknown";
   case ProblemCode::NoValidAlarmConfig: return "no_valid_alarm_config";
@@ -225,12 +198,9 @@ static const char *problemName(ProblemCode code)
   case ProblemCode::FallbackAudioFailed: return "fallback_audio_failed";
   case ProblemCode::BraceletMissing: return "bracelet_missing";
   case ProblemCode::BraceletLowBattery: return "bracelet_low_battery";
-  case ProblemCode::BraceletFault: return "bracelet_fault";
   case ProblemCode::SensorFault: return "sensor_fault";
-  case ProblemCode::AudioFault: return "audio_fault";
-  case ProblemCode::UnknownFault: return "unknown_fault";
   }
-  return "unknown_fault";
+  return "sensor_fault";
 }
 
 static bool alarmIsActive()
@@ -856,19 +826,10 @@ static void publishBraceletStatus()
     lastSeen = String(bracelet.lastSeenMs);
   }
 
-  String wifiRssiDbm = "null";
-  const bool braceletRecentlySeen = bracelet.lastSeenMs > 0 &&
-                                     millis() - bracelet.lastSeenMs <= ARMED_BRACELET_TIMEOUT_MS;
-  if (braceletRecentlySeen && bracelet.wifiRssiDbm != BraceletStationProtocol::WIFI_RSSI_UNKNOWN_DBM)
-  {
-    wifiRssiDbm = String(bracelet.wifiRssiDbm);
-  }
-
   const String body = String("{\"id\":\"main\",\"bracelet_state\":\"") + braceletStateName(bracelet.state) +
                       "\",\"problem_code\":\"" + problemName(bracelet.problem) +
                       "\",\"problem_message\":\"" + escapeJson(problemName(bracelet.problem)) +
                       "\",\"bracelet_battery_voltage\":" + batteryVoltage +
-                      ",\"bracelet_wifi_rssi_dbm\":" + wifiRssiDbm +
                       ",\"bracelet_last_seen_ms\":" + lastSeen +
                       ",\"bracelet_energy\":" + String(bracelet.energy) +
                       ",\"bracelet_energy_valid_ms\":" + String(bracelet.energyValidMs) +
@@ -1118,9 +1079,9 @@ static bool braceletIsReadyForAlarm()
     return false;
   }
 
-  if (bracelet.state == BraceletState::Fault || bracelet.problem == ProblemCode::BraceletFault || bracelet.problem == ProblemCode::SensorFault)
+  if (bracelet.state == BraceletState::Fault || bracelet.problem == ProblemCode::SensorFault)
   {
-    setStationState(StationState::Fault, ProblemCode::BraceletFault, "Bracelet reports a blocking fault");
+    setStationState(StationState::Fault, ProblemCode::SensorFault, "Bracelet reports a sensor fault");
     return false;
   }
 
@@ -1199,9 +1160,7 @@ static void sendStationControl()
   packet.header.sequence = ++controlSequence;
   packet.header.uptimeMs = millis();
   packet.stationState = static_cast<uint8_t>(stationState);
-  packet.alarmRevision = alarmConfig.revision;
   packet.vibrationRequest = vibrationRequestActive ? 1 : 0;
-  packet.thresholdProfile = BraceletStationProtocol::THRESHOLD_PROFILE_NORMAL;
   packet.acknowledgedBootSessionId = acknowledgedBootSessionId;
   packet.acknowledgedMovementEventId = acknowledgedMovementEventId;
   packet.vibrationRequestId = vibrationRequestActive ? vibrationRequestId : 0;
@@ -1220,11 +1179,15 @@ static void sendStationControl()
 
 static ProblemCode packetProblemToCode(uint8_t value)
 {
-  if (value <= static_cast<uint8_t>(ProblemCode::UnknownFault))
+  switch (static_cast<ProblemCode>(value))
   {
+  case ProblemCode::None:
+  case ProblemCode::BraceletLowBattery:
+  case ProblemCode::SensorFault:
     return static_cast<ProblemCode>(value);
+  default:
+    return ProblemCode::SensorFault;
   }
-  return ProblemCode::UnknownFault;
 }
 
 static bool deviceIdMatches(const uint8_t *left, const uint8_t *right)
@@ -1234,9 +1197,7 @@ static bool deviceIdMatches(const uint8_t *left, const uint8_t *right)
 
 static void loadPairedBracelet()
 {
-  // Keep the existing namespace so installations paired over UDP retain the
-  // same dedicated bracelet after the ESP-NOW migration.
-  preferences.begin("udp-link", true);
+  preferences.begin("espnow-link", true);
   if (preferences.getBytesLength("braceletId") == sizeof(pairedBraceletId))
   {
     preferences.getBytes("braceletId", pairedBraceletId, sizeof(pairedBraceletId));
@@ -1249,7 +1210,7 @@ static void loadPairedBracelet()
 static void savePairedBracelet(const uint8_t *braceletId)
 {
   memcpy(pairedBraceletId, braceletId, sizeof(pairedBraceletId));
-  preferences.begin("udp-link", false);
+  preferences.begin("espnow-link", false);
   preferences.putBytes("braceletId", pairedBraceletId, sizeof(pairedBraceletId));
   preferences.end();
   braceletPaired = true;
@@ -1265,20 +1226,14 @@ static void handleBraceletStatus(const BraceletStatusPacket &packet)
   bracelet.state = packet.braceletState <= static_cast<uint8_t>(BraceletState::Fault)
                        ? static_cast<BraceletState>(packet.braceletState)
                        : BraceletState::Unknown;
-  bracelet.activityScore = packet.activityScore;
-  bracelet.validated = packet.validated != 0;
   bracelet.batteryVoltage = packet.batteryVoltageMv == 0 ? -1.0F : static_cast<float>(packet.batteryVoltageMv) / 1000.0F;
   bracelet.batteryPercent = estimateBatteryPercent(bracelet.batteryVoltage);
-  bracelet.wifiRssiDbm = packet.wifiRssiDbm;
   bracelet.problem = packetProblemToCode(packet.faultCode);
-  bracelet.charging = packet.flags & 0x01;
-  bracelet.sensorReady = packet.flags & 0x02;
-  bracelet.vibrating = packet.flags & 0x04;
+  bracelet.vibrating = packet.vibrating != 0;
   bracelet.energy = packet.energy;
   bracelet.energyValidMs = packet.energyValidMs;
   bracelet.sequence = packet.header.sequence;
   bracelet.bootSessionId = packet.bootSessionId;
-  bracelet.movementEventId = packet.movementEventId;
   bracelet.vibrationAckId = packet.vibrationAckId;
   const uint32_t now = millis();
   bracelet.lastSeenMs = now;

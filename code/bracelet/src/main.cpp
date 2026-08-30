@@ -43,18 +43,11 @@ namespace
     constexpr uint8_t BATTERY_UNKNOWN = 255;
     constexpr uint8_t ESP_NOW_MIN_CHANNEL = 1;
     constexpr uint8_t ESP_NOW_MAX_CHANNEL = 13;
-    constexpr uint8_t FLAG_CHARGING = 1 << 0;
-    constexpr uint8_t FLAG_SENSOR_READY = 1 << 1;
-    constexpr uint8_t FLAG_VIBRATION_ACTIVE = 1 << 2;
-
     enum class BraceletState : uint8_t
     {
-        Charging = 1,
-        Ready = 2,
-        Active = 3,
-        Validated = 4,
-        LowBattery = 5,
-        Fault = 6,
+        Ready = 1,
+        LowBattery = 2,
+        Fault = 3,
     };
 
     enum class StationState : uint8_t
@@ -71,18 +64,8 @@ namespace
     enum class ProblemCode : uint8_t
     {
         None = 0,
-        WifiUnavailable = 1,
-        SupabaseUnavailable = 2,
-        TimeUnknown = 3,
-        NoValidAlarmConfig = 4,
-        MusicStreamFailed = 5,
-        FallbackAudioFailed = 6,
-        BraceletMissing = 7,
-        BraceletLowBattery = 8,
-        BraceletFault = 9,
-        SensorFault = 10,
-        AudioFault = 11,
-        UnknownFault = 12,
+        BraceletLowBattery = 7,
+        SensorFault = 8,
     };
 
     using BraceletStationProtocol::BraceletStatusPacket;
@@ -146,8 +129,8 @@ namespace
     uint8_t batteryPercent = BATTERY_UNKNOWN;
     StationState stationState = StationState::Unknown;
     BraceletState lastSentBraceletState = BraceletState::Fault;
-    ProblemCode lastSentProblemCode = ProblemCode::UnknownFault;
-    uint8_t lastSentFlags = 0xff;
+    ProblemCode lastSentProblemCode = ProblemCode::None;
+    bool lastSentVibrating = false;
     bool stationRequestsVibration = false;
     uint8_t espNowChannel = ESP_NOW_MIN_CHANNEL;
     uint8_t pairedStationId[6] = {};
@@ -361,20 +344,6 @@ namespace
         return ProblemCode::None;
     }
 
-    uint8_t currentFlags()
-    {
-        uint8_t flags = 0;
-        if (sensorReady)
-        {
-            flags |= FLAG_SENSOR_READY;
-        }
-        if (vibrationMotorOn)
-        {
-            flags |= FLAG_VIBRATION_ACTIVE;
-        }
-        return flags;
-    }
-
     void fillHeader(PacketHeader &header, uint8_t messageType)
     {
         header.magic = BraceletStationProtocol::MAGIC;
@@ -393,9 +362,7 @@ namespace
 
     void loadPairedStation()
     {
-        // Keep the existing namespace so installations paired over UDP retain
-        // the same dedicated station after the ESP-NOW migration.
-        preferences.begin("udp-link", true);
+        preferences.begin("espnow-link", true);
         if (preferences.getBytesLength("stationId") == sizeof(pairedStationId))
         {
             preferences.getBytes("stationId", pairedStationId, sizeof(pairedStationId));
@@ -409,7 +376,7 @@ namespace
     void savePairedStation(const uint8_t *stationId)
     {
         memcpy(pairedStationId, stationId, sizeof(pairedStationId));
-        preferences.begin("udp-link", false);
+        preferences.begin("espnow-link", false);
         preferences.putBytes("stationId", pairedStationId, sizeof(pairedStationId));
         preferences.end();
         stationPaired = true;
@@ -532,10 +499,9 @@ namespace
         const uint32_t now = millis();
         const BraceletState nextBraceletState = currentBraceletState();
         const ProblemCode nextProblemCode = currentFaultCode();
-        const uint8_t nextFlags = currentFlags();
         const bool statusChanged = nextBraceletState != lastSentBraceletState ||
                                    nextProblemCode != lastSentProblemCode ||
-                                   nextFlags != lastSentFlags;
+                                   vibrationMotorOn != lastSentVibrating;
         const bool shouldForce = force || forceStatusSend || statusChanged;
         if (!shouldForce && now - lastSendMs < currentSendPeriod())
         {
@@ -548,12 +514,9 @@ namespace
         BraceletStatusPacket packet = {};
         fillHeader(packet.header, BraceletStationProtocol::MESSAGE_BRACELET_STATUS);
         packet.braceletState = static_cast<uint8_t>(nextBraceletState);
-        packet.activityScore = static_cast<uint8_t>(constrain(energyTracker.lastEnergy / 40, 0UL, 100UL));
-        packet.validated = 0;
         packet.batteryVoltageMv = batteryVoltage > 0.1F ? static_cast<uint16_t>(roundf(batteryVoltage * 1000.0F)) : 0;
-        packet.wifiRssiDbm = BraceletStationProtocol::WIFI_RSSI_UNKNOWN_DBM;
         packet.faultCode = static_cast<uint8_t>(nextProblemCode);
-        packet.flags = nextFlags;
+        packet.vibrating = vibrationMotorOn ? 1 : 0;
         packet.energy = energyTracker.lastEnergy;
         packet.energyValidMs = energyTracker.lastValidMs;
         packet.bootSessionId = bootSessionId;
@@ -592,7 +555,7 @@ namespace
 
         lastSentBraceletState = nextBraceletState;
         lastSentProblemCode = nextProblemCode;
-        lastSentFlags = nextFlags;
+        lastSentVibrating = vibrationMotorOn;
     }
 
     void handleStationControl(const StationControlPacket &packet)

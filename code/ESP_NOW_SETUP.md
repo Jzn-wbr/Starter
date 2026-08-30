@@ -1,6 +1,6 @@
 # Bracelet / station ESP-NOW setup
 
-The station and bracelet must use protocol v5 firmware together. The station
+The station and bracelet must use protocol v6 firmware together. The station
 still joins the configured home WiFi for NTP, Supabase, and music streaming;
 the bracelet communicates only through ESP-NOW and needs no router credentials.
 
@@ -11,7 +11,7 @@ the bracelet communicates only through ESP-NOW and needs no router credentials.
 2. Build and upload both firmwares.
 3. Boot the station first so it can start joining the home WiFi.
 4. Boot the bracelet. It scans channels 1 through 13 until it receives a valid
-   protocol v5 station control, then locks to that channel.
+   protocol v6 station control, then locks to that channel.
 5. The first valid exchange stores the two peer MAC identifiers in NVS.
 
 Expected logs include `espnow_status:ready`,
@@ -45,5 +45,3 @@ it reloads the current configuration from Supabase after reconnecting.
   to a different 2.4 GHz channel.
 - The armed missing-bracelet timeout is 25 seconds. The active alarm timeout
   remains 3 seconds and keeps the alarm behavior conservative.
-- The bracelet RSSI compatibility field is reported as unknown because the
-  bracelet is not associated with the home WiFi.

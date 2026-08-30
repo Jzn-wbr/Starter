@@ -2,10 +2,9 @@ import { createClient } from '@supabase/supabase-js'
 
 export type AudioSource = 'track' | 'fallback'
 export type StationState = 'idle' | 'armed' | 'ringing' | 'validating_activity' | 'stopped' | 'fault'
-export type BraceletState = 'unknown' | 'charging' | 'ready' | 'active' | 'validated' | 'low_battery' | 'fault'
+export type BraceletState = 'unknown' | 'ready' | 'low_battery' | 'fault'
 export type ProblemCode =
   | 'none'
-  | 'wifi_unavailable'
   | 'supabase_unavailable'
   | 'time_unknown'
   | 'no_valid_alarm_config'
@@ -13,10 +12,7 @@ export type ProblemCode =
   | 'fallback_audio_failed'
   | 'bracelet_missing'
   | 'bracelet_low_battery'
-  | 'bracelet_fault'
   | 'sensor_fault'
-  | 'audio_fault'
-  | 'unknown_fault'
 
 export interface MusicTrack {
   id: string
@@ -61,7 +57,6 @@ export interface BraceletStatus {
   problem_code: ProblemCode
   problem_message: string
   bracelet_battery_voltage: number | null
-  bracelet_wifi_rssi_dbm: number | null
   bracelet_last_seen_ms: number | null
   bracelet_energy: number
   bracelet_energy_valid_ms: number

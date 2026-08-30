@@ -17,7 +17,7 @@ BMI270 at 50 Hz, calculates 200 ms energy windows, reports battery and fault
 state, discovers its paired station by scanning ESP-NOW channels, and pulses the vibration motor while
 excluding motor noise from movement energy.
 
-ESP-NOW protocol v5 retains the newest qualifying movement event for up to 10
+ESP-NOW protocol v6 retains the newest qualifying movement event for up to 10
 seconds, retransmits it until the station acknowledges it, and confirms a
 vibration request only after the motor output actually starts. The first valid
 station is paired in NVS. Station and bracelet firmware must be flashed together.
@@ -71,7 +71,7 @@ Target station link is binary ESP-NOW. The bracelet does not join the home WiFi 
 
 The bracelet should send enough telemetry for the station to decide alarm state, but the station remains authoritative.
 
-ESP-NOW protocol v5 retains the newest qualifying 200 ms energy event for up to
+ESP-NOW protocol v6 retains the newest qualifying 200 ms energy event for up to
 10 seconds and retransmits it with its age until the station acknowledges it.
 The bracelet also acknowledges a vibration request only after the motor has
 actually started. The bracelet sends status every 10 seconds outside an active

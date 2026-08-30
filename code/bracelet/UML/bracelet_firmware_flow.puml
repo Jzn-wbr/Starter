@@ -34,7 +34,7 @@ repeat
   endif
 
   if (completed window reaches threshold?) then (yes)
-    :Create a protocol v5 movement event;
+    :Create a protocol v6 movement event;
     :Retain for at most 10 seconds until acknowledged;
     :Send bracelet_status immediately over ESP-NOW;
   endif
@@ -46,9 +46,9 @@ repeat
   endif
 
   if (alarm active?) then (yes)
-    :Send protocol v5 status every 200 ms;
+    :Send protocol v6 status every 200 ms;
   else (no)
-    :Send protocol v5 status every 10 seconds;
+    :Send protocol v6 status every 10 seconds;
   endif
 repeat while (device powered)
 

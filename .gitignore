@@ -61,11 +61,11 @@ pnpm-debug.log*
 **/UML/*.svg
 **/UML/*.pdf
 
-# LaTeX documentation build outputs
-doc/*.aux
-doc/*.fls
-doc/*.fdb_latexmk
-doc/*.out
-doc/*.toc
-doc/*.synctex.gz
+# LaTeX build outputs
+**/*.aux
+**/*.fls
+**/*.fdb_latexmk
+**/*.out
+**/*.toc
+**/*.synctex.gz
 doc/tools/

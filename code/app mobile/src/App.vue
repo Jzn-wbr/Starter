@@ -2,7 +2,6 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   AlertTriangle,
-  BatteryCharging,
   Bell,
   Check,
   ChevronDown,
@@ -192,17 +191,13 @@ const stationStateLabels: Record<string, string> = {
 
 const braceletStateLabels: Record<string, string> = {
   unknown: 'Inconnu',
-  charging: 'En charge',
   ready: 'Prêt',
-  active: 'Actif',
-  validated: 'Validé',
   low_battery: 'Batterie faible',
   fault: 'Défaut',
 }
 
 const problemLabels: Record<ProblemCode, string> = {
   none: 'Aucun problème',
-  wifi_unavailable: 'WiFi indisponible',
   supabase_unavailable: 'Supabase indisponible',
   time_unknown: 'Heure inconnue',
   no_valid_alarm_config: 'Configuration invalide',
@@ -210,10 +205,7 @@ const problemLabels: Record<ProblemCode, string> = {
   fallback_audio_failed: 'Son de secours indisponible',
   bracelet_missing: 'Bracelet absent',
   bracelet_low_battery: 'Batterie du bracelet bientôt faible',
-  bracelet_fault: 'Défaut du bracelet',
   sensor_fault: 'Défaut du capteur',
-  audio_fault: 'Défaut audio',
-  unknown_fault: 'Défaut inconnu',
 }
 
 onMounted(() => {
@@ -992,8 +984,7 @@ function formatUpdatedAt(value?: string) {
 
           <article class="device-row">
             <div class="device-icon">
-              <BatteryCharging v-if="braceletStatus?.bracelet_state === 'charging'" :size="22" />
-              <Watch v-else :size="22" />
+              <Watch :size="22" />
             </div>
             <div class="device-main">
               <strong>Bracelet</strong>

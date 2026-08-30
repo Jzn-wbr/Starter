@@ -157,7 +157,7 @@ Taux de détection & Robustesse sur les réseaux faibles & Sensible au seuil et 
 \vspace{3mm}
 \textbf{Limites à conserver dans la décision}
 \begin{itemize}
-  \item Il s'agit de \textbf{scans en réception}. Ils ne mesurent ni débit, ni pertes UDP, ni latence, ni puissance effectivement rayonnée.
+  \item Il s'agit de \textbf{scans en réception}. Ils ne mesurent ni débit, ni pertes ESP-NOW, ni latence, ni puissance effectivement rayonnée.
   \item L'absence de BSSID empêche d'identifier sans ambiguïté les différents points d'accès portant le même SSID.
   \item Une seule géométrie (41 mm) est mesurée couchée et boîtier fermé ; l'effet du boîtier ne peut pas être transposé exactement aux autres longueurs.
   \item Le corps, la batterie, le mouvement et l'orientation du poignet peuvent désaccorder l'antenne. La recommandation est donc une \textbf{sélection pour le prochain prototype}, pas une validation RF finale.
@@ -379,9 +379,9 @@ Rang & Candidate & Signal dominant & Couverture & Justification \\
 \begin{enumerate}[leftmargin=7mm,itemsep=3pt,topsep=2pt]
   \item \textbf{A/B 50 mm vs 45 mm :} au moins 20 scans alternés par configuration, même emplacement, ordre randomisé pour neutraliser la dérive temporelle.
   \item \textbf{Configurations réelles :} boîtier fermé, batterie présente, bracelet au poignet ; tester au minimum quatre orientations du corps et deux poignets/utilisateurs.
-  \item \textbf{Mesure applicative :} enregistrer RSSI du point d'accès cible, taux de paquets UDP perdus, temps de reconnexion et latence d'acquittement, pas seulement le nombre de SSID.
+  \item \textbf{Mesure applicative :} enregistrer RSSI du point d'accès cible, taux de paquets ESP-NOW perdus, temps de reconnexion et latence d'acquittement, pas seulement le nombre de SSID.
   \item \textbf{Cas limites :} station dans une autre pièce, porte fermée, mouvement du bras, moteur vibrant et batterie faible.
-  \item \textbf{Critère proposé :} zéro perte de session critique ; RSSI cible idéalement supérieur à \(-70\) dBm, marge jusqu'à \(-80\) dBm ; taux de livraison UDP supérieur à 99\% pendant la fenêtre d'alarme.
+  \item \textbf{Critère proposé :} zéro perte de session critique ; RSSI cible idéalement supérieur à \(-70\) dBm, marge jusqu'à \(-80\) dBm ; taux de livraison ESP-NOW supérieur à 99\% pendant la fenêtre d'alarme.
 \end{enumerate}
 
 \begin{warningbox}

@@ -31,7 +31,7 @@ The current firmware already:
 - Outputs audio over I2S pins for the PCM5102A/PAM8403 audio chain.
 - Runs the fixed alarm activity window and generated local fallback sound.
 - Keeps bracelet vibration off for the first 15 seconds after the configured alarm time while leaving audio and movement handling active.
-- Receives ESP-NOW protocol v5 movement events, acknowledges them, recovers
+- Receives ESP-NOW protocol v6 movement events, acknowledges them, recovers
   their unelapsed mute time after packet loss, and confirms bracelet vibration
   before the pre-unmute warning starts.
 

@@ -36,8 +36,8 @@ end note
 
 Station -> Station : initialize ESP-NOW on the router's radio channel
 Bracelet -> Bracelet : scan channels 1 through 13 every 300 ms
-Station -> Bracelet : protocol v5 station_control broadcast over ESP-NOW
-Bracelet -> Station : protocol v5 bracelet_status broadcast over ESP-NOW
+Station -> Bracelet : protocol v6 station_control broadcast over ESP-NOW
+Bracelet -> Station : protocol v6 bracelet_status broadcast over ESP-NOW
 Station -> Station : persist first valid bracelet MAC in NVS
 Bracelet -> Bracelet : persist first valid station MAC in NVS
 Bracelet -> Bracelet : lock onto the station channel for 15 seconds

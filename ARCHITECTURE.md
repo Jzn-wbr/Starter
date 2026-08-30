@@ -92,7 +92,6 @@ Single station-published row for the latest bracelet state as seen by the statio
 - `problem_code`: one of the problem codes below, or `none`.
 - `problem_message`: short human-readable diagnostic text.
 - `bracelet_battery_voltage`: bracelet battery terminal voltage in volts, or `null` if unknown.
-- `bracelet_wifi_rssi_dbm`: retained compatibility field; `null` while the bracelet uses ESP-NOW and is not associated with the home WiFi.
 - `bracelet_last_seen_ms`: station uptime timestamp for the last bracelet packet, or `null`.
 - `bracelet_energy`: latest 200 ms energy window reported by the bracelet.
 - `bracelet_energy_valid_ms`: measured time inside that 200 ms window, excluding vibration and settling time.
@@ -108,7 +107,6 @@ The app reads this status. The bracelet does not write to Supabase in v1.
 Use these v1 problem codes:
 
 - `none`
-- `wifi_unavailable`
 - `supabase_unavailable`
 - `time_unknown`
 - `no_valid_alarm_config`
@@ -116,10 +114,7 @@ Use these v1 problem codes:
 - `fallback_audio_failed`
 - `bracelet_missing`
 - `bracelet_low_battery`
-- `bracelet_fault`
 - `sensor_fault`
-- `audio_fault`
-- `unknown_fault`
 
 ## System States
 
@@ -134,10 +129,7 @@ The station should expose one clear state at a time:
 
 The bracelet should expose:
 
-- `charging`: bracelet is on the station contacts or charging input.
 - `ready`: enough battery and sensor link is usable.
-- `active`: reserved for future richer activity states; the simple energy flow normally reports `ready`.
-- `validated`: reserved compatibility state; the simple energy flow does not use it for alarm authority.
 - `low_battery`: battery may be insufficient for reliable wake-up validation.
 - `fault`: sensor, power, or firmware state prevents reliable validation.
 
@@ -209,7 +201,7 @@ Station battery voltage is measured on station GPIO34 through a 2:1 voltage divi
 Use compact binary packets. All packets start with:
 
 - `magic`: uint32 value identifying Starter traffic before any packet is parsed.
-- `protocol_version`: `5`. Older packets are rejected; station and bracelet firmware must be updated together.
+- `protocol_version`: `6`. Older packets are rejected; station and bracelet firmware must be updated together.
 - `message_type`: enum below.
 - `sender_role`: `station` or `bracelet`.
 - `device_id`: 6-byte MAC address.
@@ -220,20 +212,15 @@ Use compact binary packets. All packets start with:
 
 - `1`: `bracelet_status`, bracelet -> station.
 - `2`: `station_control`, station -> bracelet.
-- `3`: `pairing_probe`, reserved for future explicit pairing.
-- `4`: `debug_event`, development only.
 
 ### ESP-NOW `bracelet_status` Packet
 
 Fields:
 
 - `bracelet_state`: enum from System States.
-- `activity_score`: uint8 compatibility view of latest energy, `0..100`.
-- `validated`: boolean, always false in the simple energy v1 flow.
 - `battery_voltage_mv`: uint16 bracelet battery terminal voltage in millivolts, or `0` if unknown.
-- `wifi_rssi_dbm`: compatibility byte set to `0` because the bracelet is not associated with the home WiFi.
 - `fault_code`: problem code enum, or `none`.
-- `flags`: bitmask for `charging`, `sensor_ready`, `vibration_active`.
+- `vibrating`: boolean indicating whether the vibration motor is currently active.
 - `energy`: uint32 energy measured over the latest 200 ms window.
 - `energy_valid_ms`: uint16 measured milliseconds in that window, excluding bracelet vibration/settling.
 - `boot_session_id`: uint32 random non-zero identifier regenerated at bracelet boot.
@@ -260,9 +247,7 @@ Station timeout rules:
 Fields:
 
 - `station_state`: enum from System States.
-- `alarm_revision`: current loaded `alarm_plan.revision`.
 - `vibration_request`: boolean; forced false for the first `15s` after the configured alarm time, then true while the station is producing audible alarm audio and during the 3-second pre-unmute warning before audio resumes after an energy mute. Audio, movement processing, mute timing, and the fixed activity window remain active during the initial vibration-free interval.
-- `threshold_profile`: `normal` for v1.
 - `acknowledged_boot_session_id`: bracelet boot session associated with the acknowledged movement event.
 - `acknowledged_movement_event_id`: latest movement event accepted or intentionally ignored by the station.
 - `vibration_request_id`: non-zero identifier regenerated whenever vibration changes from not requested to requested.
@@ -286,7 +271,6 @@ Use these v1 defaults unless physical testing proves they are wrong:
 - Duplicate, out-of-order, pre-alarm, invalid, or at-least-10-second-old movement events do not restart the mute. A newer valid event may extend the existing deadline.
 - When the mute expires, the station keeps `XSMT` muted and requests vibration with a new identifier. After matching `vibration_ack_id`, it gives the user a 3-second pre-unmute warning plus the `500ms` jitter grace. Without acknowledgement after `3s`, it resumes alarm audio conservatively. A new valid movement event during either wait restarts only its own remaining interval.
 - When the 10-minute window ends, the station stops alarm audio and marks the alarm revision complete, regardless of energy history.
-- Activity score is a compatibility `0..100` projection of latest energy.
 
 The bracelet computes energy over 200 ms windows and retains threshold candidates for reliable transport. The station revalidates every event and remains responsible for whether audio should play and when the alarm revision is complete.
 
