@@ -15,14 +15,14 @@ armed --> idle : 10-minute activity window expired\nor revision already complete
 armed --> fault : no valid time/config\nbracelet missing/low/fault
 
 ringing --> validating_activity : valid v6 ESP-NOW movement event <= 10 s old\nXSMT LOW for remaining 10 s interval
-ringing --> stopped : 10-minute activity window ended
+ringing --> stopped : 10-minute activity window ended\nbracelet signals 4 fast pulses once
 ringing --> ringing : bracelet timeout > 3 s\npublish bracelet_missing, keep audio playing
 ringing --> fault : audio fault
 
-validating_activity --> ringing : mute expires, vibration is acknowledged,\n3 s warning plus 500 ms guard expires
+validating_activity --> ringing : mute expires, vibration is acknowledged,\npulses at 0/4/6 s then audio resumes near 7 s
 validating_activity --> ringing : vibration acknowledgement missing for 3 s\nresume conservatively
 validating_activity --> validating_activity : bracelet timeout > 3 s\npublish bracelet_missing, honor existing deadline
-validating_activity --> stopped : 10-minute activity window ended
+validating_activity --> stopped : 10-minute activity window ended\nbracelet signals 4 fast pulses once
 validating_activity --> fault : audio fault
 
 stopped --> idle : alarm cycle complete
@@ -57,8 +57,12 @@ The bracelet retransmits its newest qualifying event
 for up to 10 seconds. The station subtracts event age
 from the original 10-second mute and ignores duplicates.
 Packet loss does not cancel an already confirmed mute.
-Audio resumes after a matching vibration acknowledgement,
-or conservatively after a 3-second acknowledgement timeout.
+Audio resumes after a matching vibration acknowledgement and
+up to 3 pulses starting at 0, 4 and 6 seconds, or conservatively after a 3-second
+acknowledgement timeout. If the mute expires during the initial
+15 seconds, it remains muted until the warning can run.
+A new movement after pulse 1 or 2 cancels the remaining warning
+and starts the movement mute again.
 The stream or fallback audio keeps running until
 the station marks the alarm complete when that
 window ends.

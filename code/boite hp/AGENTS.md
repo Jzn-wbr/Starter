@@ -31,9 +31,11 @@ The current firmware already:
 - Outputs audio over I2S pins for the PCM5102A/PAM8403 audio chain.
 - Runs the fixed alarm activity window and generated local fallback sound.
 - Keeps bracelet vibration off for the first 15 seconds after the configured alarm time while leaving audio and movement handling active.
+- Sends the `stopped` transition at the end of the 10-minute window; the bracelet
+  uses that transition to emit its four-pulse completion signal once.
 - Receives ESP-NOW protocol v6 movement events, acknowledges them, recovers
   their unelapsed mute time after packet loss, and confirms bracelet vibration
-  before the pre-unmute warning starts.
+  before allowing up to three pre-unmute vibrations at 0, 4 and 6 seconds.
 
 The current code remains a physical prototype: range, battery measurements,
 audio behavior, movement thresholds, and complete wake-up behavior still need
@@ -109,8 +111,12 @@ If WiFi, NTP, Supabase, audio streaming, or bracelet communication fails:
   part of their original 10-second interval. Do not mark the active alarm
   revision complete because of packet loss.
 - Before resuming audio after a movement mute, require a matching bracelet
-  vibration acknowledgement. Resume conservatively after 3 seconds if no
-  acknowledgement arrives; never remain silent indefinitely on a missing link.
+  vibration acknowledgement, then leave enough warning time for three 500 ms
+  bracelet pulses starting at 0, 4 and 6 seconds. Resume audio about 1 second
+  after the third starts. A new movement after the first or second pulse cancels
+  the remaining warning and starts its own mute. Resume
+  conservatively after 3 seconds if no acknowledgement arrives; never remain
+  silent indefinitely on a missing link.
 - Preserve the product rule that the alarm does not get an easy stop path.
 - Expose a problem state to the app/backend when that interface exists.
 

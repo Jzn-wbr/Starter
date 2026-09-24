@@ -30,6 +30,16 @@ namespace
     constexpr uint32_t ENERGY_WINDOW_MS = 200;
     constexpr uint32_t VIBRATION_PERIOD_MS = 4000;
     constexpr uint32_t VIBRATION_ON_MS = 500;
+    constexpr uint32_t PRE_UNMUTE_SECOND_PULSE_MS = 4000;
+    constexpr uint32_t PRE_UNMUTE_THIRD_PULSE_MS = 6000;
+    constexpr uint32_t PRE_UNMUTE_SEQUENCE_MS = PRE_UNMUTE_THIRD_PULSE_MS + VIBRATION_ON_MS;
+    constexpr uint32_t ALARM_COMPLETE_VIBRATION_LEAD_IN_MS = 200;
+    constexpr uint32_t ALARM_COMPLETE_VIBRATION_PERIOD_MS = 300;
+    constexpr uint32_t ALARM_COMPLETE_VIBRATION_ON_MS = 150;
+    constexpr uint8_t ALARM_COMPLETE_VIBRATION_PULSE_COUNT = 4;
+    constexpr uint32_t ALARM_COMPLETE_VIBRATION_SEQUENCE_MS =
+        (ALARM_COMPLETE_VIBRATION_PULSE_COUNT - 1) * ALARM_COMPLETE_VIBRATION_PERIOD_MS +
+        ALARM_COMPLETE_VIBRATION_ON_MS;
     constexpr uint32_t VIBRATION_SETTLE_MS = 450;
     constexpr float ACCEL_NOISE_FLOOR_G = 0.003F;
     constexpr float GYRO_NOISE_FLOOR_DPS = 0.6F;
@@ -110,6 +120,7 @@ namespace
     uint32_t lastChannelHopMs = 0;
     uint32_t ignoreMotionUntilMs = 0;
     uint32_t vibrationRequestStartMs = 0;
+    uint32_t alarmCompleteVibrationStartMs = 0;
     uint32_t bootSessionId = 0;
     uint32_t movementEventId = 0;
     uint32_t movementEventUptimeMs = 0;
@@ -125,6 +136,7 @@ namespace
     bool stationPaired = false;
     bool forceStatusSend = false;
     bool vibrationMotorOn = false;
+    bool alarmCompleteVibrationActive = false;
     float batteryVoltage = 0.0F;
     uint8_t batteryPercent = BATTERY_UNKNOWN;
     StationState stationState = StationState::Unknown;
@@ -567,6 +579,16 @@ namespace
                                                   : StationState::Unknown;
         const StationState previousStationState = stationState;
         stationState = nextStationState;
+        const bool alarmJustCompleted =
+            (previousStationState == StationState::Ringing ||
+             previousStationState == StationState::ValidatingActivity) &&
+            stationState == StationState::Stopped;
+        if (alarmJustCompleted)
+        {
+            alarmCompleteVibrationStartMs = now + ALARM_COMPLETE_VIBRATION_LEAD_IN_MS;
+            alarmCompleteVibrationActive = true;
+            Serial.println("alarm_complete_vibration:queued_4_fast_pulses");
+        }
         if (previousStationState != stationState)
         {
             forceStatusSend = true;
@@ -671,7 +693,43 @@ namespace
         }
 
         const uint32_t vibrationElapsedMs = stationRequestsVibration ? now - vibrationRequestStartMs : 0;
-        const bool shouldPulse = stationRequestsVibration && (vibrationElapsedMs % VIBRATION_PERIOD_MS) < VIBRATION_ON_MS;
+        const bool preUnmuteWarning = stationState == StationState::ValidatingActivity;
+        const bool preUnmutePulse =
+            vibrationElapsedMs < VIBRATION_ON_MS ||
+            (vibrationElapsedMs >= PRE_UNMUTE_SECOND_PULSE_MS &&
+             vibrationElapsedMs < PRE_UNMUTE_SECOND_PULSE_MS + VIBRATION_ON_MS) ||
+            (vibrationElapsedMs >= PRE_UNMUTE_THIRD_PULSE_MS &&
+             vibrationElapsedMs < PRE_UNMUTE_SEQUENCE_MS);
+        const bool regularPulse = stationRequestsVibration &&
+                                  (preUnmuteWarning
+                                       ? preUnmutePulse
+                                       : (vibrationElapsedMs % VIBRATION_PERIOD_MS) < VIBRATION_ON_MS);
+
+        bool shouldPulse = regularPulse;
+        if (alarmCompleteVibrationActive)
+        {
+            const bool sequenceStarted = static_cast<int32_t>(now - alarmCompleteVibrationStartMs) >= 0;
+            if (!sequenceStarted)
+            {
+                shouldPulse = false;
+            }
+            else
+            {
+                const uint32_t alarmCompleteElapsedMs = now - alarmCompleteVibrationStartMs;
+                if (alarmCompleteElapsedMs < ALARM_COMPLETE_VIBRATION_SEQUENCE_MS)
+                {
+                    shouldPulse =
+                        (alarmCompleteElapsedMs % ALARM_COMPLETE_VIBRATION_PERIOD_MS) <
+                        ALARM_COMPLETE_VIBRATION_ON_MS;
+                }
+                else
+                {
+                    alarmCompleteVibrationActive = false;
+                    shouldPulse = regularPulse;
+                    Serial.println("alarm_complete_vibration:finished");
+                }
+            }
+        }
 
         if (shouldPulse && !vibrationMotorOn)
         {

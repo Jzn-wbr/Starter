@@ -37,7 +37,12 @@ static const int AUDIO_BUFFER_RAM_BYTES = 24 * 1024;
 static const int AUDIO_BUFFER_PSRAM_BYTES = 192 * 1024;
 static const uint32_t ARMED_BRACELET_TIMEOUT_MS = 25000;
 static const uint32_t RINGING_BRACELET_TIMEOUT_MS = 3000;
-static const uint32_t ENERGY_PRE_UNMUTE_WARNING_MS = 3000;
+static const uint32_t VIBRATION_ACK_TIMEOUT_MS = 3000;
+static const uint32_t PRE_UNMUTE_SECOND_VIBRATION_MS = 4000;
+static const uint32_t PRE_UNMUTE_THIRD_VIBRATION_MS = 6000;
+static const uint32_t PRE_UNMUTE_VIBRATION_ON_MS = 500;
+static const uint32_t ENERGY_PRE_UNMUTE_WARNING_MS =
+    PRE_UNMUTE_THIRD_VIBRATION_MS + PRE_UNMUTE_VIBRATION_ON_MS;
 static const uint32_t ENERGY_UNMUTE_GRACE_MS = 500;
 static const uint32_t REMOTE_AUDIO_PRIME_MS = 700;
 static const uint32_t REMOTE_AUDIO_LOOP_BUDGET_MS = 20;
@@ -316,15 +321,13 @@ static bool energyKeepsAudioMuted()
     if (initialVibrationDelayIsActive())
     {
       setVibrationRequest(false);
-      unmuteWarningUntilMs = now + ENERGY_PRE_UNMUTE_WARNING_MS;
-      Serial.println("Initial vibration delay active; continuing the pre-unmute wait without vibration.");
       return true;
     }
 
     setVibrationRequest(true);
-    vibrationAckDeadlineMs = now + ENERGY_PRE_UNMUTE_WARNING_MS;
+    vibrationAckDeadlineMs = now + VIBRATION_ACK_TIMEOUT_MS;
     Serial.printf("Waiting up to %lu ms for vibration acknowledgement %lu.\n",
-                  static_cast<unsigned long>(ENERGY_PRE_UNMUTE_WARNING_MS),
+                  static_cast<unsigned long>(VIBRATION_ACK_TIMEOUT_MS),
                   static_cast<unsigned long>(vibrationRequestId));
     return true;
   }
@@ -335,7 +338,7 @@ static bool energyKeepsAudioMuted()
     {
       vibrationAckDeadlineMs = 0;
       unmuteWarningUntilMs = now + ENERGY_PRE_UNMUTE_WARNING_MS;
-      Serial.printf("Vibration acknowledgement %lu received; starting pre-unmute warning.\n",
+      Serial.printf("Vibration acknowledgement %lu received; starting 4s/2s three-vibration warning before unmute.\n",
                     static_cast<unsigned long>(vibrationRequestId));
       return true;
     }

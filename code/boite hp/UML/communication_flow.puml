@@ -81,16 +81,18 @@ alt alarm time within 10-minute activity window
     Station -> Audio : stay muted
   else mute timer expires
     alt still within the first 15 s after alarm time
-      Station -> Station : keep the normal pre-unmute timing\nwithout bracelet vibration
+      Station -> Station : keep audio muted until vibration is allowed
     else initial 15 s elapsed
-      Station -> Bracelet : request vibration with a new id\nwhile XSMT remains muted
+      Station -> Bracelet : request 0/4/6 s warning with a new id\nwhile XSMT remains muted
     end
     alt matching vibration acknowledgement arrives
-      Station -> Station : start 3 s warning plus 500 ms guard
+      Bracelet -> Bracelet : pulse 500 ms at 0, 4 and 6 seconds\nup to 3 times before audio resumes
+      Station -> Station : resume about 1 second after pulse 3 starts
     else no acknowledgement for 3 s
       Station -> Audio : resume alarm conservatively
     end
     alt bracelet energy reaches threshold during warning
+      Station -> Bracelet : cancel remaining warning pulses
       Station -> Audio : keep muted for a new 10 s window
     else no new threshold event
     Station -> Audio : resume alarm output
@@ -119,5 +121,7 @@ end
 Station -> Station : 10-minute activity window ends
 Station -> Audio : stop stream/fallback alarm audio
 Station -> Supabase : station_state=stopped
+Station -> Bracelet : station_control state=stopped
+Bracelet -> Bracelet : vibrate 4 times rapidly once\n150 ms on, starts 300 ms apart
 
 @enduml

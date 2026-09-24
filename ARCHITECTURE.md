@@ -148,7 +148,7 @@ Allowed station transitions for v1:
 - `ringing -> ringing`: bracelet packets are lost for more than `3s`; publish `bracelet_missing`, keep alarm audio playing, and resume movement detection automatically when packets return.
 - `ringing -> fault`: station audio output fails.
 - `ringing -> stopped`: the 10-minute alarm activity window has ended.
-- `validating_activity -> ringing`: the 10-second energy mute and the 3-second pre-unmute bracelet warning expire before the 10-minute window has ended.
+- `validating_activity -> ringing`: the 10-second energy mute and the pre-unmute warning of up to three bracelet vibrations expire before the 10-minute window has ended.
 - `validating_activity -> stopped`: the 10-minute alarm activity window has ended.
 - `validating_activity -> validating_activity`: bracelet packets are lost for more than `3s`; publish `bracelet_missing` but honor the remaining confirmed movement mute.
 - `validating_activity -> ringing`: the confirmed movement mute expires and no vibration acknowledgement or new movement event prevents audio from resuming.
@@ -158,6 +158,8 @@ Allowed station transitions for v1:
 - `fault -> armed`: user fixes the issue and station reloads a valid enabled alarm.
 
 Do not add a normal stop or snooze transition from `ringing` or `validating_activity`. The v1 alarm stops only when the fixed 10-minute activity window ends; bracelet energy only mutes alarm audio during that window.
+
+When the bracelet observes the station transition from `ringing` or `validating_activity` to `stopped`, it emits one completion signal made of four fast vibration pulses. Each pulse lasts `150ms` and starts `300ms` after the previous one. This local indication means the 10-minute wake-up window is complete and the bracelet may be removed. Repeated `stopped` controls do not replay the signal.
 
 ## Failure Policy
 
@@ -247,13 +249,13 @@ Station timeout rules:
 Fields:
 
 - `station_state`: enum from System States.
-- `vibration_request`: boolean; forced false for the first `15s` after the configured alarm time, then true while the station is producing audible alarm audio and during the 3-second pre-unmute warning before audio resumes after an energy mute. Audio, movement processing, mute timing, and the fixed activity window remain active during the initial vibration-free interval.
+- `vibration_request`: boolean; forced false for the first `15s` after the configured alarm time, then true while the station is producing audible alarm audio and during the pre-unmute warning of up to three vibrations before audio resumes after an energy mute. Audio, movement processing, mute timing, and the fixed activity window remain active during the initial vibration-free interval.
 - `acknowledged_boot_session_id`: bracelet boot session associated with the acknowledged movement event.
 - `acknowledged_movement_event_id`: latest movement event accepted or intentionally ignored by the station.
 - `vibration_request_id`: non-zero identifier regenerated whenever vibration changes from not requested to requested.
 
 The bracelet scans WiFi channels 1 through 13 every `300ms` until it receives a valid `station_control`, then locks to that channel while controls continue. After `15s` without a valid control, it resumes channel scanning. Reliable movement delivery and confirmed pre-unmute vibration use the acknowledgements carried by subsequent station control packets.
-When `vibration_request` is true, the bracelet pulses its motor instead of holding it continuously on. The current firmware default is `500ms` on every `4s`, with BMI270 energy ignored while the motor is active and during the short settling time after it stops. When the motor first starts for a request, the bracelet echoes its identifier in `vibration_ack_id` and forces a status response.
+When `vibration_request` is true, the bracelet pulses its motor instead of holding it continuously on. During audible ringing, the default remains `500ms` on every `4s`. During the `validating_activity` pre-unmute warning, each pulse also lasts `500ms`, but the starts occur at `0s`, `4s`, and `6s`; audio resumes approximately `1s` after the third pulse starts. A new valid movement event after the first or second pulse cancels the warning request and starts a new movement mute, so the remaining warning pulses are not required. BMI270 energy is ignored while the motor is active and during the short settling time after it stops. When the motor first starts for a request, the bracelet echoes its identifier in `vibration_ack_id` and forces a status response.
 The station broadcasts `station_control` over ESP-NOW on its current home-WiFi channel. Controls are sent every `5s` outside an alarm, every `700ms` during an alarm, and immediately for important state changes. ESP-NOW loss is handled by the existing event retention, identifiers, retransmission, and application acknowledgements.
 
 The first valid exchange pairs the two device MAC identifiers in NVS. Later packets from another device identifier are rejected. Replacing a paired device requires erasing NVS/flash before reflashing. If the station changes home-WiFi channel after reconnecting, the bracelet reacquires it through channel scanning without clearing the pairing.
@@ -269,7 +271,7 @@ Use these v1 defaults unless physical testing proves they are wrong:
 - During that window, the station plays alarm audio when bracelet energy is below threshold or missing.
 - If a bracelet energy window reaches the station threshold, currently `1000000`, the bracelet retains it as a movement event for up to `10s` and retransmits it until acknowledged. The station revalidates the event and mutes alarm output with station `XSMT` on GPIO26 for the unelapsed part of the original 10-second interval. For example, an event received at age `4s` produces `6s` of mute.
 - Duplicate, out-of-order, pre-alarm, invalid, or at-least-10-second-old movement events do not restart the mute. A newer valid event may extend the existing deadline.
-- When the mute expires, the station keeps `XSMT` muted and requests vibration with a new identifier. After matching `vibration_ack_id`, it gives the user a 3-second pre-unmute warning plus the `500ms` jitter grace. Without acknowledgement after `3s`, it resumes alarm audio conservatively. A new valid movement event during either wait restarts only its own remaining interval.
+- When the mute expires, the station keeps `XSMT` muted and requests vibration with a new identifier. After matching `vibration_ack_id`, the bracelet may emit three `500ms` pulses: the second starts `4s` after the first and the third starts `2s` after the second. Audio resumes approximately `1s` after the third pulse starts, including the `500ms` jitter grace. A new valid movement event after any pulse immediately cancels the warning request and restarts only that event's remaining 10-second mute interval; therefore the bracelet may vibrate only once or twice when the user moves in time. Without acknowledgement after `3s`, the station resumes alarm audio conservatively. If the mute expires during the initial 15-second vibration-free interval, audio remains muted until that interval ends and the warning can run.
 - When the 10-minute window ends, the station stops alarm audio and marks the alarm revision complete, regardless of energy history.
 
 The bracelet computes energy over 200 ms windows and retains threshold candidates for reliable transport. The station revalidates every event and remains responsible for whether audio should play and when the alarm revision is complete.

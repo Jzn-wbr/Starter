@@ -40,9 +40,18 @@ repeat
   endif
 
   if (vibration requested?) then (yes)
-    :Pulse motor 500 ms every 4 seconds;
+    if (station validating activity?) then (yes)
+      :Pulse 500 ms at 0, 4 and 6 seconds;
+    else (no)
+      :Pulse motor 500 ms every 4 seconds;
+    endif
     :Acknowledge id only after motor starts;
     :Send acknowledgement immediately;
+  endif
+
+  if (active alarm changed to stopped?) then (yes)
+    :Wait 200 ms to separate any current pulse;
+    :Signal completion once with 4 fast pulses\n150 ms on, starts 300 ms apart;
   endif
 
   if (alarm active?) then (yes)

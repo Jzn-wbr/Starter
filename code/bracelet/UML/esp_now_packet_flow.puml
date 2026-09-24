@@ -35,8 +35,17 @@ end
 Station -> Station : validate retained event and age
 Station -> Station : mute for remaining part of original 10 seconds
 Station -> Bracelet : vibration request with new id
-Bracelet -> Bracelet : start vibration pulse
+Bracelet -> Bracelet : pulse 500 ms at 0, 4 and 6 seconds\nat most 3 before unmute
 Bracelet -> Station : immediate status with vibration_ack_id
+alt new valid movement after pulse 1 or 2
+  Station -> Bracelet : cancel vibration request
+  Station -> Station : restart remaining movement mute
+else no new movement
+  Station -> Station : resume audio about 1 second\nafter pulse 3 starts
+end
+
+Station -> Bracelet : station_control state=stopped\nat end of 10-minute window
+Bracelet -> Bracelet : signal completion once\n4 x 150 ms pulses, starts 300 ms apart
 
 alt no valid control for 15 seconds
   Bracelet -> Bracelet : resume channel scanning every 300 ms

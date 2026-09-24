@@ -19,7 +19,14 @@ excluding motor noise from movement energy.
 
 ESP-NOW protocol v6 retains the newest qualifying movement event for up to 10
 seconds, retransmits it until the station acknowledges it, and confirms a
-vibration request only after the motor output actually starts. The first valid
+vibration request only after the motor output actually starts. During audible
+ringing, vibration uses the normal cadence of 500 ms every 4 seconds. During
+`validating_activity`, up to three 500 ms warning pulses start at 0, 4 and 6
+seconds before audio resumes about 1 second after the third starts. A new movement
+after the first or second pulse cancels the remaining warning.
+A transition from an active alarm state to
+`stopped` produces four fast 150 ms pulses, once, to indicate that the 10-minute
+window is complete and the bracelet may be removed. The first valid
 station is paired in NVS. Station and bracelet firmware must be flashed together.
 The station intentionally sends no vibration request during the first 15 seconds
 after the configured alarm time; bracelet sensing and telemetry remain unchanged.
