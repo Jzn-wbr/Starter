@@ -6,9 +6,9 @@
 
 Un système de réveil connecté qui combine une station audio, un bracelet de mouvement et une application mobile pour transformer le réveil en un vrai départ de journée.
 
-<img src="images/renduassemblage.png" alt="Vue 3D de la station et du bracelet" width="720">
+<img src="images/reveil produit final.png" alt="Version finale de la station audio" width="720">
 
-**Projet personnel · Prototype terminé**
+**Projet personnel · Version finale du produit**
 
 </div>
 
@@ -43,13 +43,13 @@ L’objectif : remplacer le réflexe « encore cinq minutes » par un réveil pl
 ## En images
 
 <div align="center">
-  <img src="images/interieur bracelet.jpeg" alt="Électronique et batterie du bracelet" width="46%">
-  <img src="images/cartes electroniques.jpeg" alt="Prototype des cartes électroniques et de la station audio" width="46%">
+  <img src="images/bracelet interieur.png" alt="Électronique et batterie du bracelet" width="46%">
+  <img src="images/cartes electroniques.png" alt="Cartes électroniques et station audio" width="46%">
 </div>
 
 ## Une base ouverte pour un objet complet
 
-Ce dépôt rassemble l’application mobile, le firmware de la station, le firmware du bracelet, les schémas électroniques et la documentation du système. Il présente un prototype fonctionnel, pensé comme un réveil fiable, agréable à utiliser et réellement efficace.
+Ce dépôt rassemble l’application mobile, le firmware de la station, le firmware du bracelet, les schémas électroniques et la documentation du système. Il présente la version finale du produit, pensée comme un réveil fiable, agréable à utiliser et réellement efficace.
 
 > Le système est conçu pour un usage personnel. Les choix techniques et les fonctionnalités peuvent encore évoluer.
 
