@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="code/app%20mobile/public/starter-icon.svg" alt="Logo Réveil" width="140">
+
 # Réveil
 
 ### Un réveil qui vous aide vraiment à sortir du lit.
@@ -52,4 +54,3 @@ L’objectif : remplacer le réflexe « encore cinq minutes » par un réveil pl
 Ce dépôt rassemble l’application mobile, le firmware de la station, le firmware du bracelet, les schémas électroniques et la documentation du système. Il présente la version finale du produit, pensée comme un réveil fiable, agréable à utiliser et réellement efficace.
 
 > Le système est conçu pour un usage personnel. Les choix techniques et les fonctionnalités peuvent encore évoluer.
-
