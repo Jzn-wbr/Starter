@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="code/app%20mobile/public/starter-icon.svg" alt="Logo Réveil" width="140">
+<img src="code/app%20mobile/icon.png" alt="Logo de l’application mobile Réveil" width="140">
 
 # Réveil
 
